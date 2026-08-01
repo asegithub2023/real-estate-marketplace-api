@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="RealEstateMarketplace.Api/RealEstateMarketplace.Api.csproj" />
+  <Project Path="RealEstateMarketplace.Application/RealEstateMarketplace.Application.csproj" />
+  <Project Path="RealEstateMarketplace.Domain/RealEstateMarketplace.Domain.csproj" />
+  <Project Path="RealEstateMarketplace.Infrastructure/RealEstateMarketplace.Infrastructure.csproj" />
+</Solution>
