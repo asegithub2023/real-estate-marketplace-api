@@ -1,0 +1,43 @@
+using FluentValidation;
+using Microsoft.Extensions.DependencyInjection;
+using RealEstateMarketplace.Application.Interfaces.Repositories;
+using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
+using RealEstateMarketplace.Application.Validators;
+using RealEstateMarketplace.Infrastructure.Repositories;
+using RealEstateMarketplace.Infrastructure.Services;
+
+namespace RealEstateMarketplace.Infrastructure;
+
+public static class DependencyInjectionExtensions
+{
+    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    {
+        services.AddAutoMapper(typeof(ApplicationMappingProfile));
+        services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IPropertyRepository, PropertyRepository>();
+        services.AddScoped<IPropertyImageRepository, PropertyImageRepository>();
+        services.AddScoped<IPropertyFeatureRepository, PropertyFeatureRepository>();
+        services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+        services.AddScoped<IReviewRepository, ReviewRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
+
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IPropertyService, PropertyService>();
+        services.AddScoped<IPropertyImageService, PropertyImageService>();
+        services.AddScoped<IPropertyFeatureService, PropertyFeatureService>();
+        services.AddScoped<IFavoriteService, FavoriteService>();
+        services.AddScoped<IReviewService, ReviewService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IConversationService, ConversationService>();
+        services.AddScoped<IMessageService, MessageService>();
+
+        return services;
+    }
+}

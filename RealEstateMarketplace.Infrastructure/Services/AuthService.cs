@@ -1,6 +1,9 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
@@ -11,10 +14,12 @@ namespace RealEstateMarketplace.Infrastructure.Services;
 public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IConfiguration _configuration;
 
-    public AuthService(IUserRepository userRepository)
+    public AuthService(IUserRepository userRepository, IConfiguration configuration)
     {
         _userRepository = userRepository;
+        _configuration = configuration;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
@@ -85,26 +90,33 @@ public class AuthService : IAuthService
         return $"pbkdf2${iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
     }
 
-    private static string GenerateToken(User user)
+    private string GenerateToken(User user)
     {
-        var payload = new
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var key = jwtSettings["Key"] ?? "default-development-secret-key-change-me";
+        var issuer = jwtSettings["Issuer"] ?? "RealEstateMarketplace.Api";
+        var audience = jwtSettings["Audience"] ?? "RealEstateMarketplace.Client";
+        var expiresInMinutes = int.TryParse(jwtSettings["ExpiresInMinutes"], out var minutes) ? minutes : 60;
+
+        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+        var claims = new List<Claim>
         {
-            sub = user.Id,
-            email = user.Email,
-            exp = DateTimeOffset.UtcNow.AddHours(2).ToUnixTimeSeconds()
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(ClaimTypes.Name, user.FullName),
+            new(ClaimTypes.Role, user.Role.ToString())
         };
 
-        var headerJson = JsonSerializer.Serialize(new { alg = "HS256", typ = "JWT" });
-        var payloadJson = JsonSerializer.Serialize(payload);
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiresInMinutes),
+            signingCredentials: credentials);
 
-        var headerBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(headerJson));
-        var payloadBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(payloadJson));
-
-        var signingInput = $"{headerBase64}.{payloadBase64}";
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("real-estate-marketplace"));
-        var signature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(signingInput)));
-
-        return $"{headerBase64}.{payloadBase64}.{signature}";
+        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
     private static AuthResponseDto MapToDto(User user, string token)
