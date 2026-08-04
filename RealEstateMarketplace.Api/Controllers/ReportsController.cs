@@ -34,11 +34,6 @@ public class ReportsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ReportDto>> Create([FromBody] CreateReportDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var report = await _reportService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = report.Id }, report);
     }
@@ -46,11 +41,6 @@ public class ReportsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ReportDto>> Update(int id, [FromBody] UpdateReportDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var report = await _reportService.UpdateAsync(id, request, cancellationToken);
         return report is null ? NotFound() : Ok(report);
     }

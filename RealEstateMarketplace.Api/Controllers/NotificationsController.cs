@@ -27,11 +27,6 @@ public class NotificationsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<NotificationDto>> Create([FromBody] CreateNotificationDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var notification = await _notificationService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetByUserId), new { userId = notification.UserId }, notification);
     }

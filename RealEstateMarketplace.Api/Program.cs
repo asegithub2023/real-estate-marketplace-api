@@ -70,14 +70,14 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference("/scalar");
 }
 
-app.UseExceptionHandler();
+
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-
+app.UseExceptionHandler();
 app.UseRouting();
 app.UseCors("AllowAngularApp");
 app.UseAuthentication();

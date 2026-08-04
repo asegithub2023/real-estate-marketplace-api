@@ -34,11 +34,6 @@ public class ReviewsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ReviewDto>> Create([FromBody] CreateReviewDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var review = await _reviewService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = review.Id }, review);
     }
@@ -46,11 +41,6 @@ public class ReviewsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ReviewDto>> Update(int id, [FromBody] UpdateReviewDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var review = await _reviewService.UpdateAsync(id, request, cancellationToken);
         return review is null ? NotFound() : Ok(review);
     }

@@ -27,11 +27,6 @@ public class FavoritesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<FavoriteDto>> Create([FromBody] CreateFavoriteDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var favorite = await _favoriteService.AddAsync(request, cancellationToken);
         return favorite is null ? BadRequest() : CreatedAtAction(nameof(GetByUserId), new { userId = favorite.UserId }, favorite);
     }

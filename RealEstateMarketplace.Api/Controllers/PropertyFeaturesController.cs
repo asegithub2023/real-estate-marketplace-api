@@ -36,11 +36,6 @@ public class PropertyFeaturesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PropertyFeatureDto>> Create([FromBody] CreatePropertyFeatureDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var feature = await _propertyFeatureService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = feature.Id }, feature);
     }
@@ -48,11 +43,6 @@ public class PropertyFeaturesController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<PropertyFeatureDto>> Update(int id, [FromBody] UpdatePropertyFeatureDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var feature = await _propertyFeatureService.UpdateAsync(id, request, cancellationToken);
         return feature is null ? NotFound() : Ok(feature);
     }

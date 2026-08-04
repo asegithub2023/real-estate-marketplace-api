@@ -27,11 +27,6 @@ public class MessagesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<MessageDto>> Create([FromBody] CreateMessageDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var message = await _messageService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetByConversationId), new { conversationId = message.ConversationId }, message);
     }
@@ -39,11 +34,6 @@ public class MessagesController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<MessageDto>> Update(int id, [FromBody] UpdateMessageDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var message = await _messageService.UpdateAsync(id, request, cancellationToken);
         return message is null ? NotFound() : Ok(message);
     }

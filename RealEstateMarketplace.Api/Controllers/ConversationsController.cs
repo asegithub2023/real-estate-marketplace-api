@@ -34,11 +34,6 @@ public class ConversationsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ConversationDto>> Create([FromBody] CreateConversationDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var conversation = await _conversationService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = conversation.Id }, conversation);
     }
@@ -46,11 +41,6 @@ public class ConversationsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ConversationDto>> Update(int id, [FromBody] UpdateConversationDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var conversation = await _conversationService.UpdateAsync(id, request, cancellationToken);
         return conversation is null ? NotFound() : Ok(conversation);
     }

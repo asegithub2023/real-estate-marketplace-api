@@ -44,11 +44,6 @@ public class PropertiesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PropertyDto>> Create([FromBody] CreatePropertyDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var property = await _propertyService.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = property.Id }, property);
     }
@@ -56,11 +51,6 @@ public class PropertiesController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<PropertyDto>> Update(int id, [FromBody] UpdatePropertyDto request, CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-        {
-            return ValidationProblem(ModelState);
-        }
-
         var property = await _propertyService.UpdateAsync(id, request, cancellationToken);
         return property is null ? NotFound() : Ok(property);
     }
