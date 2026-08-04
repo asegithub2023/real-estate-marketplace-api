@@ -1,3 +1,4 @@
+using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
@@ -10,24 +11,26 @@ public class ReviewService : IReviewService
     private readonly IReviewRepository _reviewRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPropertyRepository _propertyRepository;
+    private readonly IMapper _mapper;
 
-    public ReviewService(IReviewRepository reviewRepository, IUserRepository userRepository, IPropertyRepository propertyRepository)
+    public ReviewService(IReviewRepository reviewRepository, IUserRepository userRepository, IPropertyRepository propertyRepository, IMapper mapper)
     {
         _reviewRepository = reviewRepository;
         _userRepository = userRepository;
         _propertyRepository = propertyRepository;
+        _mapper = mapper;
     }
 
     public async Task<ReviewDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var review = await _reviewRepository.GetByIdAsync(id, cancellationToken);
-        return review is null ? null : MapToDto(review);
+        return review is null ? null : _mapper.Map<ReviewDto>(review);
     }
 
     public async Task<IReadOnlyList<ReviewDto>> GetByPropertyIdAsync(int propertyId, CancellationToken cancellationToken = default)
     {
         var reviews = await _reviewRepository.GetByPropertyIdAsync(propertyId, cancellationToken);
-        return reviews.Select(MapToDto).ToList();
+        return reviews.Select(review => _mapper.Map<ReviewDto>(review)).ToList();
     }
 
     public async Task<ReviewDto> CreateAsync(CreateReviewDto request, CancellationToken cancellationToken = default)
@@ -48,7 +51,7 @@ public class ReviewService : IReviewService
         };
 
         await _reviewRepository.AddAsync(review, cancellationToken);
-        return MapToDto(review);
+        return _mapper.Map<ReviewDto>(review);
     }
 
     public async Task<ReviewDto?> UpdateAsync(int id, UpdateReviewDto request, CancellationToken cancellationToken = default)
@@ -70,7 +73,7 @@ public class ReviewService : IReviewService
         }
 
         await _reviewRepository.UpdateAsync(review, cancellationToken);
-        return MapToDto(review);
+        return _mapper.Map<ReviewDto>(review);
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -83,17 +86,5 @@ public class ReviewService : IReviewService
 
         await _reviewRepository.DeleteAsync(review, cancellationToken);
         return true;
-    }
-
-    private static ReviewDto MapToDto(Review review)
-    {
-        return new ReviewDto
-        {
-            Id = review.Id,
-            Rating = review.Rating,
-            Comment = review.Comment,
-            UserId = review.UserId,
-            PropertyId = review.PropertyId
-        };
     }
 }

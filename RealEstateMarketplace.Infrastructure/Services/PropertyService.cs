@@ -1,3 +1,4 @@
+using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
@@ -9,29 +10,31 @@ public class PropertyService : IPropertyService
 {
     private readonly IPropertyRepository _propertyRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IMapper _mapper;
 
-    public PropertyService(IPropertyRepository propertyRepository, IUserRepository userRepository)
+    public PropertyService(IPropertyRepository propertyRepository, IUserRepository userRepository, IMapper mapper)
     {
         _propertyRepository = propertyRepository;
         _userRepository = userRepository;
+        _mapper = mapper;
     }
 
     public async Task<PropertyDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var property = await _propertyRepository.GetByIdAsync(id, cancellationToken);
-        return property is null ? null : MapToDto(property);
+        return property is null ? null : _mapper.Map<PropertyDto>(property);
     }
 
     public async Task<IReadOnlyList<PropertyDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var properties = await _propertyRepository.GetAllAsync(cancellationToken);
-        return properties.Select(MapToDto).ToList();
+        return properties.Select(property => _mapper.Map<PropertyDto>(property)).ToList();
     }
 
     public async Task<IReadOnlyList<PropertyDto>> GetByOwnerIdAsync(int ownerId, CancellationToken cancellationToken = default)
     {
         var properties = await _propertyRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
-        return properties.Select(MapToDto).ToList();
+        return properties.Select(property => _mapper.Map<PropertyDto>(property)).ToList();
     }
 
     public async Task<PropertyDto> CreateAsync(CreatePropertyDto request, CancellationToken cancellationToken = default)
@@ -59,7 +62,7 @@ public class PropertyService : IPropertyService
         };
 
         await _propertyRepository.AddAsync(property, cancellationToken);
-        return MapToDto(property);
+        return _mapper.Map<PropertyDto>(property);
     }
 
     public async Task<PropertyDto?> UpdateAsync(int id, UpdatePropertyDto request, CancellationToken cancellationToken = default)
@@ -126,7 +129,7 @@ public class PropertyService : IPropertyService
         }
 
         await _propertyRepository.UpdateAsync(property, cancellationToken);
-        return MapToDto(property);
+        return _mapper.Map<PropertyDto>(property);
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -139,48 +142,5 @@ public class PropertyService : IPropertyService
 
         await _propertyRepository.DeleteAsync(property, cancellationToken);
         return true;
-    }
-
-    private static PropertyDto MapToDto(Property property)
-    {
-        return new PropertyDto
-        {
-            Id = property.Id,
-            Title = property.Title,
-            Description = property.Description,
-            Price = property.Price,
-            City = property.City,
-            Address = property.Address,
-            Country = property.Country,
-            Bedrooms = property.Bedrooms,
-            Bathrooms = property.Bathrooms,
-            Rooms = property.Rooms,
-            Area = property.Area,
-            Status = property.Status,
-            OwnerId = property.OwnerId,
-            OwnerName = property.Owner?.FullName ?? string.Empty,
-            Images = property.Images.Select(MapToDto).ToList(),
-            Features = property.PropertyFeatures.Select(MapToDto).ToList()
-        };
-    }
-
-    private static PropertyImageDto MapToDto(PropertyImage image)
-    {
-        return new PropertyImageDto
-        {
-            Id = image.Id,
-            ImageUrl = image.ImageUrl,
-            PropertyId = image.PropertyId
-        };
-    }
-
-    private static PropertyFeatureDto MapToDto(PropertyFeature feature)
-    {
-        return new PropertyFeatureDto
-        {
-            Id = feature.Id,
-            Name = feature.Name,
-            Icon = feature.Icon
-        };
     }
 }

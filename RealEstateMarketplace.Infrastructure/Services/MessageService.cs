@@ -1,3 +1,4 @@
+using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
@@ -10,18 +11,20 @@ public class MessageService : IMessageService
     private readonly IMessageRepository _messageRepository;
     private readonly IConversationRepository _conversationRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IMapper _mapper;
 
-    public MessageService(IMessageRepository messageRepository, IConversationRepository conversationRepository, IUserRepository userRepository)
+    public MessageService(IMessageRepository messageRepository, IConversationRepository conversationRepository, IUserRepository userRepository, IMapper mapper)
     {
         _messageRepository = messageRepository;
         _conversationRepository = conversationRepository;
         _userRepository = userRepository;
+        _mapper = mapper;
     }
 
     public async Task<IReadOnlyList<MessageDto>> GetByConversationIdAsync(int conversationId, CancellationToken cancellationToken = default)
     {
         var messages = await _messageRepository.GetByConversationIdAsync(conversationId, cancellationToken);
-        return messages.Select(MapToDto).ToList();
+        return messages.Select(message => _mapper.Map<MessageDto>(message)).ToList();
     }
 
     public async Task<MessageDto> CreateAsync(CreateMessageDto request, CancellationToken cancellationToken = default)
@@ -41,7 +44,7 @@ public class MessageService : IMessageService
         };
 
         await _messageRepository.AddAsync(message, cancellationToken);
-        return MapToDto(message);
+        return _mapper.Map<MessageDto>(message);
     }
 
     public async Task<MessageDto?> UpdateAsync(int id, UpdateMessageDto request, CancellationToken cancellationToken = default)
@@ -58,7 +61,7 @@ public class MessageService : IMessageService
         }
 
         await _messageRepository.UpdateAsync(message, cancellationToken);
-        return MapToDto(message);
+        return _mapper.Map<MessageDto>(message);
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -71,17 +74,5 @@ public class MessageService : IMessageService
 
         await _messageRepository.DeleteAsync(message, cancellationToken);
         return true;
-    }
-
-    private static MessageDto MapToDto(Message message)
-    {
-        return new MessageDto
-        {
-            Id = message.Id,
-            ConversationId = message.ConversationId,
-            SenderId = message.SenderId,
-            Content = message.Content,
-            SentAt = message.SentAt
-        };
     }
 }

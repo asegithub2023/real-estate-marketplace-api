@@ -1,3 +1,4 @@
+using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
@@ -9,17 +10,19 @@ public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IMapper _mapper;
 
-    public NotificationService(INotificationRepository notificationRepository, IUserRepository userRepository)
+    public NotificationService(INotificationRepository notificationRepository, IUserRepository userRepository, IMapper mapper)
     {
         _notificationRepository = notificationRepository;
         _userRepository = userRepository;
+        _mapper = mapper;
     }
 
     public async Task<IReadOnlyList<NotificationDto>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         var notifications = await _notificationRepository.GetByUserIdAsync(userId, cancellationToken);
-        return notifications.Select(MapToDto).ToList();
+        return notifications.Select(notification => _mapper.Map<NotificationDto>(notification)).ToList();
     }
 
     public async Task<NotificationDto?> MarkAsReadAsync(int id, CancellationToken cancellationToken = default)
@@ -32,7 +35,7 @@ public class NotificationService : INotificationService
 
         notification.IsRead = true;
         await _notificationRepository.UpdateAsync(notification, cancellationToken);
-        return MapToDto(notification);
+        return _mapper.Map<NotificationDto>(notification);
     }
 
     public async Task<NotificationDto> CreateAsync(CreateNotificationDto request, CancellationToken cancellationToken = default)
@@ -52,18 +55,6 @@ public class NotificationService : INotificationService
         };
 
         await _notificationRepository.AddAsync(notification, cancellationToken);
-        return MapToDto(notification);
-    }
-
-    private static NotificationDto MapToDto(Notification notification)
-    {
-        return new NotificationDto
-        {
-            Id = notification.Id,
-            Title = notification.Title,
-            Message = notification.Message,
-            IsRead = notification.IsRead,
-            UserId = notification.UserId
-        };
+        return _mapper.Map<NotificationDto>(notification);
     }
 }

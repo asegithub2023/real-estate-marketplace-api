@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using RealEstateMarketplace.Application.DTOs;
@@ -15,11 +16,13 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
+    private readonly IMapper _mapper;
 
-    public AuthService(IUserRepository userRepository, IConfiguration configuration)
+    public AuthService(IUserRepository userRepository, IConfiguration configuration, IMapper mapper)
     {
         _userRepository = userRepository;
         _configuration = configuration;
+        _mapper = mapper;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
@@ -31,7 +34,9 @@ public class AuthService : IAuthService
         }
 
         var token = GenerateToken(user);
-        return MapToDto(user, token);
+        var response = _mapper.Map<AuthResponseDto>(user);
+        response.Token = token;
+        return response;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
@@ -53,7 +58,9 @@ public class AuthService : IAuthService
         await _userRepository.AddAsync(user, cancellationToken);
 
         var token = GenerateToken(user);
-        return MapToDto(user, token);
+        var response = _mapper.Map<AuthResponseDto>(user);
+        response.Token = token;
+        return response;
     }
 
     private static bool VerifyPassword(string password, string storedHash)
@@ -117,17 +124,5 @@ public class AuthService : IAuthService
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private static AuthResponseDto MapToDto(User user, string token)
-    {
-        return new AuthResponseDto
-        {
-            UserId = user.Id,
-            FullName = user.FullName,
-            Email = user.Email,
-            Role = user.Role.ToString(),
-            Token = token
-        };
     }
 }
