@@ -2,7 +2,6 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
-using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Application.Validators;
 using RealEstateMarketplace.Infrastructure.Repositories;
 using RealEstateMarketplace.Infrastructure.Services;
@@ -13,7 +12,6 @@ public static class DependencyInjectionExtensions
 {
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        services.AddAutoMapper(typeof(ApplicationMappingProfile));
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
         services.AddScoped<IUserRepository, UserRepository>();

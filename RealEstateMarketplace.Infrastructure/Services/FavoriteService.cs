@@ -1,7 +1,7 @@
-using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
@@ -11,20 +11,18 @@ public class FavoriteService : IFavoriteService
     private readonly IFavoriteRepository _favoriteRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPropertyRepository _propertyRepository;
-    private readonly IMapper _mapper;
 
-    public FavoriteService(IFavoriteRepository favoriteRepository, IUserRepository userRepository, IPropertyRepository propertyRepository, IMapper mapper)
+    public FavoriteService(IFavoriteRepository favoriteRepository, IUserRepository userRepository, IPropertyRepository propertyRepository)
     {
         _favoriteRepository = favoriteRepository;
         _userRepository = userRepository;
         _propertyRepository = propertyRepository;
-        _mapper = mapper;
     }
 
     public async Task<IReadOnlyList<FavoriteDto>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         var favorites = await _favoriteRepository.GetByUserIdAsync(userId, cancellationToken);
-        return favorites.Select(favorite => _mapper.Map<FavoriteDto>(favorite)).ToList();
+        return favorites.Select(favorite => favorite.ToDto()).ToList();
     }
 
     public async Task<FavoriteDto?> AddAsync(CreateFavoriteDto request, CancellationToken cancellationToken = default)
@@ -39,7 +37,7 @@ public class FavoriteService : IFavoriteService
         var existingFavorite = await _favoriteRepository.GetByUserAndPropertyAsync(request.UserId, request.PropertyId, cancellationToken);
         if (existingFavorite is not null)
         {
-            return _mapper.Map<FavoriteDto>(existingFavorite);
+            return existingFavorite.ToDto();
         }
 
         var favorite = new Favorite
@@ -49,7 +47,7 @@ public class FavoriteService : IFavoriteService
         };
 
         await _favoriteRepository.AddAsync(favorite, cancellationToken);
-        return _mapper.Map<FavoriteDto>(favorite);
+        return favorite.ToDto();
     }
 
     public async Task<bool> RemoveAsync(int userId, int propertyId, CancellationToken cancellationToken = default)

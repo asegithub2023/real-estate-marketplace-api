@@ -1,7 +1,7 @@
-using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
@@ -10,19 +10,17 @@ public class PropertyImageService : IPropertyImageService
 {
     private readonly IPropertyImageRepository _propertyImageRepository;
     private readonly IPropertyRepository _propertyRepository;
-    private readonly IMapper _mapper;
 
-    public PropertyImageService(IPropertyImageRepository propertyImageRepository, IPropertyRepository propertyRepository, IMapper mapper)
+    public PropertyImageService(IPropertyImageRepository propertyImageRepository, IPropertyRepository propertyRepository)
     {
         _propertyImageRepository = propertyImageRepository;
         _propertyRepository = propertyRepository;
-        _mapper = mapper;
     }
 
     public async Task<IReadOnlyList<PropertyImageDto>> GetByPropertyIdAsync(int propertyId, CancellationToken cancellationToken = default)
     {
         var images = await _propertyImageRepository.GetByPropertyIdAsync(propertyId, cancellationToken);
-        return images.Select(image => _mapper.Map<PropertyImageDto>(image)).ToList();
+        return images.Select(image => image.ToDto()).ToList();
     }
 
     public async Task<PropertyImageDto> CreateAsync(CreatePropertyImageDto request, CancellationToken cancellationToken = default)
@@ -40,7 +38,7 @@ public class PropertyImageService : IPropertyImageService
         };
 
         await _propertyImageRepository.AddAsync(image, cancellationToken);
-        return _mapper.Map<PropertyImageDto>(image);
+        return image.ToDto();
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)

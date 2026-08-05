@@ -2,12 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
@@ -16,13 +16,11 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
-    private readonly IMapper _mapper;
 
-    public AuthService(IUserRepository userRepository, IConfiguration configuration, IMapper mapper)
+    public AuthService(IUserRepository userRepository, IConfiguration configuration)
     {
         _userRepository = userRepository;
         _configuration = configuration;
-        _mapper = mapper;
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
@@ -34,7 +32,7 @@ public class AuthService : IAuthService
         }
 
         var token = GenerateToken(user);
-        var response = _mapper.Map<AuthResponseDto>(user);
+        var response = user.ToDto();
         response.Token = token;
         return response;
     }
@@ -58,7 +56,7 @@ public class AuthService : IAuthService
         await _userRepository.AddAsync(user, cancellationToken);
 
         var token = GenerateToken(user);
-        var response = _mapper.Map<AuthResponseDto>(user);
+        var response = user.ToDto();
         response.Token = token;
         return response;
     }

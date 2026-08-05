@@ -1,7 +1,7 @@
-using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
@@ -10,31 +10,29 @@ public class PropertyService : IPropertyService
 {
     private readonly IPropertyRepository _propertyRepository;
     private readonly IUserRepository _userRepository;
-    private readonly IMapper _mapper;
 
-    public PropertyService(IPropertyRepository propertyRepository, IUserRepository userRepository, IMapper mapper)
+    public PropertyService(IPropertyRepository propertyRepository, IUserRepository userRepository)
     {
         _propertyRepository = propertyRepository;
         _userRepository = userRepository;
-        _mapper = mapper;
     }
 
     public async Task<PropertyDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var property = await _propertyRepository.GetByIdAsync(id, cancellationToken);
-        return property is null ? null : _mapper.Map<PropertyDto>(property);
+        return property is null ? null : property.ToDto();
     }
 
     public async Task<IReadOnlyList<PropertyDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var properties = await _propertyRepository.GetAllAsync(cancellationToken);
-        return properties.Select(property => _mapper.Map<PropertyDto>(property)).ToList();
+        return properties.Select(property => property.ToDto()).ToList();
     }
 
     public async Task<IReadOnlyList<PropertyDto>> GetByOwnerIdAsync(int ownerId, CancellationToken cancellationToken = default)
     {
         var properties = await _propertyRepository.GetByOwnerIdAsync(ownerId, cancellationToken);
-        return properties.Select(property => _mapper.Map<PropertyDto>(property)).ToList();
+        return properties.Select(property => property.ToDto()).ToList();
     }
 
     public async Task<PropertyDto> CreateAsync(CreatePropertyDto request, CancellationToken cancellationToken = default)
@@ -62,7 +60,7 @@ public class PropertyService : IPropertyService
         };
 
         await _propertyRepository.AddAsync(property, cancellationToken);
-        return _mapper.Map<PropertyDto>(property);
+        return property.ToDto();
     }
 
     public async Task<PropertyDto?> UpdateAsync(int id, UpdatePropertyDto request, CancellationToken cancellationToken = default)
@@ -129,7 +127,7 @@ public class PropertyService : IPropertyService
         }
 
         await _propertyRepository.UpdateAsync(property, cancellationToken);
-        return _mapper.Map<PropertyDto>(property);
+        return property.ToDto();
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)

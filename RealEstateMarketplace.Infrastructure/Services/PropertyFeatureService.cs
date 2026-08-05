@@ -1,7 +1,7 @@
-using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
@@ -9,24 +9,22 @@ namespace RealEstateMarketplace.Infrastructure.Services;
 public class PropertyFeatureService : IPropertyFeatureService
 {
     private readonly IPropertyFeatureRepository _propertyFeatureRepository;
-    private readonly IMapper _mapper;
 
-    public PropertyFeatureService(IPropertyFeatureRepository propertyFeatureRepository, IMapper mapper)
+    public PropertyFeatureService(IPropertyFeatureRepository propertyFeatureRepository)
     {
         _propertyFeatureRepository = propertyFeatureRepository;
-        _mapper = mapper;
     }
 
     public async Task<PropertyFeatureDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var feature = await _propertyFeatureRepository.GetByIdAsync(id, cancellationToken);
-        return feature is null ? null : _mapper.Map<PropertyFeatureDto>(feature);
+        return feature is null ? null : feature.ToDto();
     }
 
     public async Task<IReadOnlyList<PropertyFeatureDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var features = await _propertyFeatureRepository.GetAllAsync(cancellationToken);
-        return features.Select(feature => _mapper.Map<PropertyFeatureDto>(feature)).ToList();
+        return features.Select(feature => feature.ToDto()).ToList();
     }
 
     public async Task<PropertyFeatureDto> CreateAsync(CreatePropertyFeatureDto request, CancellationToken cancellationToken = default)
@@ -44,7 +42,7 @@ public class PropertyFeatureService : IPropertyFeatureService
         };
 
         await _propertyFeatureRepository.AddAsync(feature, cancellationToken);
-        return _mapper.Map<PropertyFeatureDto>(feature);
+        return feature.ToDto();
     }
 
     public async Task<PropertyFeatureDto?> UpdateAsync(int id, UpdatePropertyFeatureDto request, CancellationToken cancellationToken = default)
@@ -66,7 +64,7 @@ public class PropertyFeatureService : IPropertyFeatureService
         }
 
         await _propertyFeatureRepository.UpdateAsync(feature, cancellationToken);
-        return _mapper.Map<PropertyFeatureDto>(feature);
+        return feature.ToDto();
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)

@@ -1,7 +1,7 @@
-using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
@@ -11,26 +11,24 @@ public class ConversationService : IConversationService
     private readonly IConversationRepository _conversationRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPropertyRepository _propertyRepository;
-    private readonly IMapper _mapper;
 
-    public ConversationService(IConversationRepository conversationRepository, IUserRepository userRepository, IPropertyRepository propertyRepository, IMapper mapper)
+    public ConversationService(IConversationRepository conversationRepository, IUserRepository userRepository, IPropertyRepository propertyRepository)
     {
         _conversationRepository = conversationRepository;
         _userRepository = userRepository;
         _propertyRepository = propertyRepository;
-        _mapper = mapper;
     }
 
     public async Task<ConversationDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         var conversation = await _conversationRepository.GetByIdAsync(id, cancellationToken);
-        return conversation is null ? null : _mapper.Map<ConversationDto>(conversation);
+        return conversation is null ? null : conversation.ToDto();
     }
 
     public async Task<IReadOnlyList<ConversationDto>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         var conversations = await _conversationRepository.GetByUserIdAsync(userId, cancellationToken);
-        return conversations.Select(conversation => _mapper.Map<ConversationDto>(conversation)).ToList();
+        return conversations.Select(conversation => conversation.ToDto()).ToList();
     }
 
     public async Task<ConversationDto> CreateAsync(CreateConversationDto request, CancellationToken cancellationToken = default)
@@ -51,7 +49,7 @@ public class ConversationService : IConversationService
         };
 
         await _conversationRepository.AddAsync(conversation, cancellationToken);
-        return _mapper.Map<ConversationDto>(conversation);
+        return conversation.ToDto();
     }
 
     public async Task<ConversationDto?> UpdateAsync(int id, UpdateConversationDto request, CancellationToken cancellationToken = default)
@@ -78,6 +76,6 @@ public class ConversationService : IConversationService
         }
 
         await _conversationRepository.UpdateAsync(conversation, cancellationToken);
-        return _mapper.Map<ConversationDto>(conversation);
+        return conversation.ToDto();
     }
 }

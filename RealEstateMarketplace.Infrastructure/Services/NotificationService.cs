@@ -1,7 +1,7 @@
-using AutoMapper;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
@@ -10,19 +10,17 @@ public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;
     private readonly IUserRepository _userRepository;
-    private readonly IMapper _mapper;
 
-    public NotificationService(INotificationRepository notificationRepository, IUserRepository userRepository, IMapper mapper)
+    public NotificationService(INotificationRepository notificationRepository, IUserRepository userRepository)
     {
         _notificationRepository = notificationRepository;
         _userRepository = userRepository;
-        _mapper = mapper;
     }
 
     public async Task<IReadOnlyList<NotificationDto>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
         var notifications = await _notificationRepository.GetByUserIdAsync(userId, cancellationToken);
-        return notifications.Select(notification => _mapper.Map<NotificationDto>(notification)).ToList();
+        return notifications.Select(notification => notification.ToDto()).ToList();
     }
 
     public async Task<NotificationDto?> MarkAsReadAsync(int id, CancellationToken cancellationToken = default)
@@ -35,7 +33,7 @@ public class NotificationService : INotificationService
 
         notification.IsRead = true;
         await _notificationRepository.UpdateAsync(notification, cancellationToken);
-        return _mapper.Map<NotificationDto>(notification);
+        return notification.ToDto();
     }
 
     public async Task<NotificationDto> CreateAsync(CreateNotificationDto request, CancellationToken cancellationToken = default)
@@ -55,6 +53,6 @@ public class NotificationService : INotificationService
         };
 
         await _notificationRepository.AddAsync(notification, cancellationToken);
-        return _mapper.Map<NotificationDto>(notification);
+        return notification.ToDto();
     }
 }
