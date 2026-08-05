@@ -5,12 +5,7 @@ namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AllowAnonymous]
+//[AllowAnonymous]
 public class AdminController : ControllerBase
 {
-    [HttpGet("health")]
-    public ActionResult GetHealth()
-    {
-        return Ok(new { Status = "Healthy" });
-    }
 }

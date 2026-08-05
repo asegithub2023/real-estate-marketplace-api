@@ -7,7 +7,7 @@ namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AllowAnonymous]
+//[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
