@@ -1,49 +1,54 @@
-using System.Net;
+using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
 namespace RealEstateMarketplace.Api.ExceptionHandlers;
 
-public class GlobalExceptionHandler : IExceptionHandler
+public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
+    : IExceptionHandler
 {
-    private readonly ILogger<GlobalExceptionHandler> _logger;
-
-    public GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
-    {
-        _logger = logger;
-    }
-
     public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext,
-        Exception exception,
-        CancellationToken cancellationToken)
+        HttpContext httpContext, Exception exception, CancellationToken ct)
     {
-        _logger.LogError(exception, "Unhandled exception occurred.");
-
-        var (statusCode, title, detail) = exception switch
+        var (status, title, detail, errors) = exception switch
         {
-            InvalidOperationException invalidOperation when invalidOperation.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase) =>
-                (StatusCodes.Status409Conflict, "Conflict", invalidOperation.Message),
-            InvalidOperationException invalidOperation when invalidOperation.Message.Contains("not found", StringComparison.OrdinalIgnoreCase) =>
-                (StatusCodes.Status404NotFound, "Resource not found", invalidOperation.Message),
-            InvalidOperationException invalidOperation =>
-                (StatusCodes.Status400BadRequest, "Bad request", invalidOperation.Message),
-            _ =>
-                (StatusCodes.Status500InternalServerError, "An unexpected error occurred.", "Please try again later or contact support if the issue persists.")
+            ValidationException ve => (
+                StatusCodes.Status400BadRequest,
+                "Validation failed",
+                "One or more fields are invalid. See errors for details.",
+                (IDictionary<string, string[]>?)ve.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray())),
+            Application.Common.BadRequestException bre => (
+                StatusCodes.Status400BadRequest,
+                "Invalid request",
+                bre.Message,
+                null),
+            _ => (
+                StatusCodes.Status500InternalServerError,
+                "Server error",
+                $"An unexpected error occurred. Trace ID: {httpContext.TraceIdentifier}",
+                null)
         };
 
-        httpContext.Response.StatusCode = statusCode;
+        if (status == StatusCodes.Status500InternalServerError)
+            logger.LogError(exception, "Unhandled exception (trace={TraceId})", httpContext.TraceIdentifier);
+
+        var problem = new ProblemDetails
+        {
+            Status = status,
+            Title = title,
+            Detail = detail,
+            Instance = httpContext.Request.Path
+        };
+
+        if (errors is not null)
+            problem.Extensions["errors"] = errors;
+
+        httpContext.Response.StatusCode = status;
         httpContext.Response.ContentType = "application/problem+json";
 
-        var problemDetails = new ProblemDetails
-        {
-            Title = title,
-            Status = statusCode,
-            Detail = detail,
-            Type = "https://tools.ietf.org/html/rfc9110#section-15.6.1"
-        };
-
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(problem, ct);
         return true;
     }
 }

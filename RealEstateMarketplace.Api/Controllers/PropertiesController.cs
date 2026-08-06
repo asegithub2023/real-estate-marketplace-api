@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Properties.Commands;
 using RealEstateMarketplace.Application.Properties.Queries;
@@ -46,7 +47,7 @@ public class PropertiesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<PropertyDto>> Create([FromBody] CreatePropertyDto request, CancellationToken cancellationToken)
     {
-        var property = await _sender.Send(new CreatePropertyCommand
+        var result = await _sender.Send(new CreatePropertyCommand
         {
             Title = request.Title,
             Description = request.Description,
@@ -62,13 +63,17 @@ public class PropertiesController : ControllerBase
             OwnerId = request.OwnerId
         }, cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = property.Id }, property);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+            : result.Error!.Code == "owner_not_found"
+                ? NotFound(result.Error.Message)
+                : BadRequest(result.Error.Message);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<PropertyDto>> Update(int id, [FromBody] UpdatePropertyDto request, CancellationToken cancellationToken)
     {
-        var property = await _sender.Send(new UpdatePropertyCommand
+        var result = await _sender.Send(new UpdatePropertyCommand
         {
             Id = id,
             Title = request.Title,
@@ -84,13 +89,13 @@ public class PropertiesController : ControllerBase
             Status = request.Status
         }, cancellationToken);
 
-        return property is null ? NotFound() : Ok(property);
+        return result.IsSuccess ? Ok(result.Value!) : NotFound();
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var deleted = await _sender.Send(new DeletePropertyCommand { Id = id }, cancellationToken);
-        return deleted ? NoContent() : NotFound();
+        var result = await _sender.Send(new DeletePropertyCommand { Id = id }, cancellationToken);
+        return result.IsSuccess ? NoContent() : NotFound();
     }
 }

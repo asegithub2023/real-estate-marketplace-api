@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Reviews.Commands;
 using RealEstateMarketplace.Application.Reviews.Queries;
@@ -36,7 +37,7 @@ public class ReviewsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ReviewDto>> Create([FromBody] CreateReviewDto request, CancellationToken cancellationToken)
     {
-        var review = await _sender.Send(new CreateReviewCommand
+        var result = await _sender.Send(new CreateReviewCommand
         {
             Rating = request.Rating,
             Comment = request.Comment,
@@ -44,26 +45,31 @@ public class ReviewsController : ControllerBase
             PropertyId = request.PropertyId
         }, cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = review.Id }, review);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+            : result.Error!.Code == "user_or_property_not_found"
+                ? NotFound(result.Error.Message)
+                : BadRequest(result.Error.Message);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ReviewDto>> Update(int id, [FromBody] UpdateReviewDto request, CancellationToken cancellationToken)
     {
-        var review = await _sender.Send(new UpdateReviewCommand
+        var result = await _sender.Send(new UpdateReviewCommand
         {
             Id = id,
             Rating = request.Rating,
             Comment = request.Comment
         }, cancellationToken);
-        return review is null ? NotFound() : Ok(review);
+
+        return result.IsSuccess ? Ok(result.Value!) : NotFound();
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var deleted = await _sender.Send(new DeleteReviewCommand { Id = id }, cancellationToken);
-        return deleted ? NoContent() : NotFound();
+        var result = await _sender.Send(new DeleteReviewCommand { Id = id }, cancellationToken);
+        return result.IsSuccess ? NoContent() : NotFound();
     }
 }
 

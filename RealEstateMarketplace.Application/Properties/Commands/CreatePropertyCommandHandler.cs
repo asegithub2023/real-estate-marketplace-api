@@ -1,4 +1,5 @@
 using MediatR;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Application.Mapping;
@@ -6,7 +7,7 @@ using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Properties.Commands;
 
-public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropertyCommand, PropertyDto>
+public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropertyCommand, Result<PropertyDto, PropertyError>>
 {
     private readonly IPropertyRepository _propertyRepository;
     private readonly IUserRepository _userRepository;
@@ -19,12 +20,12 @@ public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropert
         _userRepository = userRepository;
     }
 
-    public async Task<PropertyDto> Handle(CreatePropertyCommand request, CancellationToken cancellationToken)
+    public async Task<Result<PropertyDto, PropertyError>> Handle(CreatePropertyCommand request, CancellationToken cancellationToken)
     {
         var owner = await _userRepository.GetByIdAsync(request.OwnerId, cancellationToken);
         if (owner is null)
         {
-            throw new InvalidOperationException("Owner was not found.");
+            return Result.Failure<PropertyDto, PropertyError>(PropertyError.OwnerNotFound(request.OwnerId));
         }
 
         var property = new Property
@@ -44,6 +45,6 @@ public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropert
         };
 
         await _propertyRepository.AddAsync(property, cancellationToken);
-        return property.ToDto();
+        return Result.Success<PropertyDto, PropertyError>(property.ToDto());
     }
 }
