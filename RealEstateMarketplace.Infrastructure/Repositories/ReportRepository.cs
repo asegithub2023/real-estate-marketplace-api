@@ -37,6 +37,14 @@ public class ReportRepository : IReportRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Report>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Reports
+            .AsNoTracking()
+            .OrderByDescending(x => x.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Report report, CancellationToken cancellationToken = default)
     {
         await _context.Reports.AddAsync(report, cancellationToken);

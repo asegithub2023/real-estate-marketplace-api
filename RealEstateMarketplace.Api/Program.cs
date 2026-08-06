@@ -2,11 +2,13 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MediatR;
 using RealEstateMarketplace.Api.ExceptionHandlers;
 using Scalar.AspNetCore;
 using RealEstateMarketplace.Api.Filters;
 using RealEstateMarketplace.Api.Middlewares;
 using RealEstateMarketplace.Api.Security;
+using RealEstateMarketplace.Application.Reviews.Commands;
 using RealEstateMarketplace.Infrastructure;
 using RealEstateMarketplace.Infrastructure.Persistence;
 
@@ -26,6 +28,7 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("postgresql");
 
 builder.Services.AddApplicationServices();
+builder.Services.AddMediatR(typeof(RealEstateMarketplace.Application.Reviews.Commands.CreateReviewCommand));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 

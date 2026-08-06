@@ -1,7 +1,8 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Application.Auth.Commands;
 using RealEstateMarketplace.Application.DTOs;
-using RealEstateMarketplace.Application.Interfaces.Services;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
@@ -10,24 +11,36 @@ namespace RealEstateMarketplace.Api.Controllers;
 //[AllowAnonymous]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly ISender _sender;
 
-    public AuthController(IAuthService authService)
+    public AuthController(ISender sender)
     {
-        _authService = authService;
+        _sender = sender;
     }
 
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _authService.LoginAsync(request, cancellationToken);
+        var response = await _sender.Send(new LoginCommand
+        {
+            Email = request.Email,
+            Password = request.Password
+        }, cancellationToken);
+
         return Ok(response);
     }
 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _authService.RegisterAsync(request, cancellationToken);
+        var response = await _sender.Send(new RegisterCommand
+        {
+            FullName = request.FullName,
+            Email = request.Email,
+            Password = request.Password,
+            PhoneNumber = request.PhoneNumber
+        }, cancellationToken);
+
         return Ok(response);
     }
 }
