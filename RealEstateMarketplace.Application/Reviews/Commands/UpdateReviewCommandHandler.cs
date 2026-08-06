@@ -1,10 +1,11 @@
 using MediatR;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 
 namespace RealEstateMarketplace.Application.Reviews.Commands;
 
-public sealed class UpdateReviewCommandHandler : IRequestHandler<UpdateReviewCommand, ReviewDto?>
+public sealed class UpdateReviewCommandHandler : IRequestHandler<UpdateReviewCommand, Result<ReviewDto, ReviewError>>
 {
     private readonly IReviewRepository _reviewRepository;
 
@@ -13,12 +14,12 @@ public sealed class UpdateReviewCommandHandler : IRequestHandler<UpdateReviewCom
         _reviewRepository = reviewRepository;
     }
 
-    public async Task<ReviewDto?> Handle(UpdateReviewCommand request, CancellationToken cancellationToken)
+    public async Task<Result<ReviewDto, ReviewError>> Handle(UpdateReviewCommand request, CancellationToken cancellationToken)
     {
         var review = await _reviewRepository.GetByIdAsync(request.Id, cancellationToken);
         if (review is null)
         {
-            return null;
+            return Result.Failure<ReviewDto, ReviewError>(ReviewError.NotFound(request.Id));
         }
 
         if (request.Rating is not null)
@@ -33,13 +34,13 @@ public sealed class UpdateReviewCommandHandler : IRequestHandler<UpdateReviewCom
 
         await _reviewRepository.UpdateAsync(review, cancellationToken);
 
-        return new ReviewDto
+        return Result.Success<ReviewDto, ReviewError>(new ReviewDto
         {
             Id = review.Id,
             Rating = review.Rating,
             Comment = review.Comment,
             UserId = review.UserId,
             PropertyId = review.PropertyId
-        };
+        });
     }
 }

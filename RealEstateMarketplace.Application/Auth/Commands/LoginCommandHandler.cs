@@ -5,13 +5,14 @@ using System.Text;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Auth.Commands;
 
-public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponseDto>
+public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto, AuthError>>
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
@@ -22,23 +23,23 @@ public sealed class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResp
         _configuration = configuration;
     }
 
-    public async Task<AuthResponseDto> Handle(LoginCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponseDto, AuthError>> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByEmailAsync(request.Email, cancellationToken);
         if (user is null || !VerifyPassword(request.Password, user.PasswordHash))
         {
-            throw new InvalidOperationException("Invalid email or password.");
+            return Result.Failure<AuthResponseDto, AuthError>(AuthError.InvalidCredentials());
         }
 
         var token = GenerateToken(user);
-        return new AuthResponseDto
+        return Result.Success<AuthResponseDto, AuthError>(new AuthResponseDto
         {
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
             Token = token
-        };
+        });
     }
 
     private static bool VerifyPassword(string password, string storedHash)

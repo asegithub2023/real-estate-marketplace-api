@@ -5,13 +5,14 @@ using System.Text;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Auth.Commands;
 
-public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthResponseDto>
+public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Result<AuthResponseDto, AuthError>>
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
@@ -22,11 +23,11 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         _configuration = configuration;
     }
 
-    public async Task<AuthResponseDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<Result<AuthResponseDto, AuthError>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         if (await _userRepository.ExistsByEmailAsync(request.Email, cancellationToken))
         {
-            throw new InvalidOperationException("A user with this email already exists.");
+            return Result.Failure<AuthResponseDto, AuthError>(AuthError.EmailAlreadyExists(request.Email));
         }
 
         var user = new User
@@ -41,14 +42,14 @@ public sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, Au
         await _userRepository.AddAsync(user, cancellationToken);
 
         var token = GenerateToken(user);
-        return new AuthResponseDto
+        return Result.Success<AuthResponseDto, AuthError>(new AuthResponseDto
         {
             UserId = user.Id,
             FullName = user.FullName,
             Email = user.Email,
             Role = user.Role.ToString(),
             Token = token
-        };
+        });
     }
 
     private static string HashPassword(string password)

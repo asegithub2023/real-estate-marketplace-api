@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Messages.Commands;
 using RealEstateMarketplace.Application.Messages.Queries;
@@ -29,24 +30,32 @@ public class MessagesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<MessageDto>> Create([FromBody] CreateMessageDto request, CancellationToken cancellationToken)
     {
-        var message = await _sender.Send(new CreateMessageCommand
+        var result = await _sender.Send(new CreateMessageCommand
         {
             ConversationId = request.ConversationId,
             SenderId = request.SenderId,
             Content = request.Content
         }, cancellationToken);
-        return CreatedAtAction(nameof(GetByConversationId), new { conversationId = message.ConversationId }, message);
+
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetByConversationId), new { conversationId = result.Value!.ConversationId }, result.Value)
+            : BadRequest(result.Error!.Message);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<MessageDto>> Update(int id, [FromBody] UpdateMessageDto request, CancellationToken cancellationToken)
     {
-        var message = await _sender.Send(new UpdateMessageCommand
+        var result = await _sender.Send(new UpdateMessageCommand
         {
             Id = id,
             Content = request.Content
         }, cancellationToken);
-        return message is null ? NotFound() : Ok(message);
+
+        return result.IsSuccess
+            ? Ok(result.Value!)
+            : result.Error!.Code == "message_not_found"
+                ? NotFound(result.Error.Message)
+                : BadRequest(result.Error.Message);
     }
 
     [HttpDelete("{id:int}")]

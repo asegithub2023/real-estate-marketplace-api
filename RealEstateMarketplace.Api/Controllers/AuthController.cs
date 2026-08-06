@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.Auth.Commands;
 using RealEstateMarketplace.Application.DTOs;
 
@@ -21,19 +22,23 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _sender.Send(new LoginCommand
+        var result = await _sender.Send(new LoginCommand
         {
             Email = request.Email,
             Password = request.Password
         }, cancellationToken);
 
-        return Ok(response);
+        return result.IsSuccess
+            ? Ok(result.Value!) 
+            : result.Error!.Code == "invalid_credentials"
+                ? Unauthorized(result.Error.Message)
+                : BadRequest(result.Error.Message);
     }
 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
     {
-        var response = await _sender.Send(new RegisterCommand
+        var result = await _sender.Send(new RegisterCommand
         {
             FullName = request.FullName,
             Email = request.Email,
@@ -41,6 +46,8 @@ public class AuthController : ControllerBase
             PhoneNumber = request.PhoneNumber
         }, cancellationToken);
 
-        return Ok(response);
+        return result.IsSuccess
+            ? Ok(result.Value!)
+            : BadRequest(result.Error!.Message);
     }
 }

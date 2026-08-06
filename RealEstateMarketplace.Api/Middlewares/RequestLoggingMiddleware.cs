@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+
 namespace RealEstateMarketplace.Api.Middlewares;
 
 public class RequestLoggingMiddleware
@@ -5,7 +9,9 @@ public class RequestLoggingMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestLoggingMiddleware> _logger;
 
-    public RequestLoggingMiddleware(RequestDelegate next, ILogger<RequestLoggingMiddleware> logger)
+    public RequestLoggingMiddleware(
+        RequestDelegate next,
+        ILogger<RequestLoggingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
@@ -13,7 +19,28 @@ public class RequestLoggingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        _logger.LogInformation("Handling request {Method} {Path}", context.Request.Method, context.Request.Path);
+        var correlationId =
+            Guid.NewGuid().ToString("N")[..8];
+
+        var stopwatch = Stopwatch.StartNew();
+
+        context.Response.Headers["X-Correlation-Id"] =
+            correlationId;
+
+        _logger.LogInformation(
+            "Request Started | {Method} {Path} | CorrelationId: {CorrelationId}",
+            context.Request.Method,
+            context.Request.Path,
+            correlationId);
+
         await _next(context);
+
+        stopwatch.Stop();
+
+        _logger.LogInformation(
+            "Request Finished | Status: {StatusCode} | {Elapsed} ms | CorrelationId: {CorrelationId}",
+            context.Response.StatusCode,
+            stopwatch.ElapsedMilliseconds,
+            correlationId);
     }
 }

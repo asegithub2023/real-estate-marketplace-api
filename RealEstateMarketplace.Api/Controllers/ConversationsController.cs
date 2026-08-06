@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.Conversations.Commands;
 using RealEstateMarketplace.Application.Conversations.Queries;
 using RealEstateMarketplace.Application.DTOs;
@@ -36,26 +37,33 @@ public class ConversationsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ConversationDto>> Create([FromBody] CreateConversationDto request, CancellationToken cancellationToken)
     {
-        var conversation = await _sender.Send(new CreateConversationCommand
+        var result = await _sender.Send(new CreateConversationCommand
         {
             PropertyId = request.PropertyId,
             BuyerId = request.BuyerId,
             OwnerId = request.OwnerId
         }, cancellationToken);
 
-        return CreatedAtAction(nameof(GetById), new { id = conversation.Id }, conversation);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+            : BadRequest(result.Error!.Message);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<ConversationDto>> Update(int id, [FromBody] UpdateConversationDto request, CancellationToken cancellationToken)
     {
-        var conversation = await _sender.Send(new UpdateConversationCommand
+        var result = await _sender.Send(new UpdateConversationCommand
         {
             Id = id,
             PropertyId = request.PropertyId,
             BuyerId = request.BuyerId,
             OwnerId = request.OwnerId
         }, cancellationToken);
-        return conversation is null ? NotFound() : Ok(conversation);
+
+        return result.IsSuccess
+            ? Ok(result.Value!)
+            : result.Error!.Code == "conversation_not_found"
+                ? NotFound(result.Error.Message)
+                : BadRequest(result.Error.Message);
     }
 }

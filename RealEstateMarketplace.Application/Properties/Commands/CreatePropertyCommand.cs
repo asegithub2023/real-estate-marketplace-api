@@ -1,9 +1,10 @@
 using MediatR;
+using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 
 namespace RealEstateMarketplace.Application.Properties.Commands;
 
-public sealed class CreatePropertyCommand : IRequest<PropertyDto>
+public sealed class CreatePropertyCommand : IRequest<Result<PropertyDto, PropertyError>>
 {
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
