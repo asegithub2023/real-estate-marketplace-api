@@ -1,7 +1,9 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateMarketplace.Application.DTOs;
-using RealEstateMarketplace.Application.Interfaces.Services;
+using RealEstateMarketplace.Application.Messages.Commands;
+using RealEstateMarketplace.Application.Messages.Queries;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
@@ -10,38 +12,47 @@ namespace RealEstateMarketplace.Api.Controllers;
 [Authorize]
 public class MessagesController : ControllerBase
 {
-    private readonly IMessageService _messageService;
+    private readonly ISender _sender;
 
-    public MessagesController(IMessageService messageService)
+    public MessagesController(ISender sender)
     {
-        _messageService = messageService;
+        _sender = sender;
     }
 
     [HttpGet("conversation/{conversationId:int}")]
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> GetByConversationId(int conversationId, CancellationToken cancellationToken)
     {
-        var messages = await _messageService.GetByConversationIdAsync(conversationId, cancellationToken);
+        var messages = await _sender.Send(new GetConversationMessagesQuery { ConversationId = conversationId }, cancellationToken);
         return Ok(messages);
     }
 
     [HttpPost]
     public async Task<ActionResult<MessageDto>> Create([FromBody] CreateMessageDto request, CancellationToken cancellationToken)
     {
-        var message = await _messageService.CreateAsync(request, cancellationToken);
+        var message = await _sender.Send(new CreateMessageCommand
+        {
+            ConversationId = request.ConversationId,
+            SenderId = request.SenderId,
+            Content = request.Content
+        }, cancellationToken);
         return CreatedAtAction(nameof(GetByConversationId), new { conversationId = message.ConversationId }, message);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<MessageDto>> Update(int id, [FromBody] UpdateMessageDto request, CancellationToken cancellationToken)
     {
-        var message = await _messageService.UpdateAsync(id, request, cancellationToken);
+        var message = await _sender.Send(new UpdateMessageCommand
+        {
+            Id = id,
+            Content = request.Content
+        }, cancellationToken);
         return message is null ? NotFound() : Ok(message);
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var deleted = await _messageService.DeleteAsync(id, cancellationToken);
+        var deleted = await _sender.Send(new DeleteMessageCommand { Id = id }, cancellationToken);
         return deleted ? NoContent() : NotFound();
     }
 }

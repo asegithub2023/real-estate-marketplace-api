@@ -46,4 +46,10 @@ public class ConversationRepository : IConversationRepository
         _context.Conversations.Update(conversation);
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task DeleteAsync(Conversation conversation, CancellationToken cancellationToken = default)
+    {
+        _context.Conversations.Remove(conversation);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -25,7 +25,6 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
 
-        services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPropertyService, PropertyService>();
         services.AddScoped<IPropertyImageService, PropertyImageService>();
         services.AddScoped<IPropertyFeatureService, PropertyFeatureService>();

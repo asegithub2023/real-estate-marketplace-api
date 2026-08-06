@@ -9,4 +9,5 @@ public interface IConversationRepository
     Task<Conversation?> GetByPropertyAndUsersAsync(int propertyId, int buyerId, int ownerId, CancellationToken cancellationToken = default);
     Task AddAsync(Conversation conversation, CancellationToken cancellationToken = default);
     Task UpdateAsync(Conversation conversation, CancellationToken cancellationToken = default);
+    Task DeleteAsync(Conversation conversation, CancellationToken cancellationToken = default);
 }
