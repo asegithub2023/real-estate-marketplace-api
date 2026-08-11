@@ -1,3 +1,4 @@
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,24 +14,26 @@ namespace RealEstateMarketplace.Api.Controllers;
 public class ReportsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IMapper _mapper;
 
-    public ReportsController(ISender sender)
+    public ReportsController(ISender sender, IMapper mapper)
     {
         _sender = sender;
+        _mapper = mapper;
     }
 
     [HttpGet("property/{propertyId:int}")]
     public async Task<ActionResult<IReadOnlyList<ReportDto>>> GetByPropertyId(int propertyId, CancellationToken cancellationToken)
     {
         var reports = await _sender.Send(new GetReportsByPropertyIdQuery { PropertyId = propertyId }, cancellationToken);
-        return Ok(reports);
+        return Ok(_mapper.Map<IReadOnlyList<ReportDto>>(reports));
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ReportDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var report = await _sender.Send(new GetReportByIdQuery { Id = id }, cancellationToken);
-        return report is null ? NotFound() : Ok(report);
+        return report is null ? NotFound() : Ok(_mapper.Map<ReportDto>(report));
     }
 
     [HttpPost]
@@ -55,7 +58,7 @@ public class ReportsController : ControllerBase
             Reason = request.Reason
         }, cancellationToken);
 
-        return report is null ? NotFound() : Ok(report);
+        return report is null ? NotFound() : Ok(_mapper.Map<ReportDto>(report));
     }
 
     [HttpDelete("{id:int}")]

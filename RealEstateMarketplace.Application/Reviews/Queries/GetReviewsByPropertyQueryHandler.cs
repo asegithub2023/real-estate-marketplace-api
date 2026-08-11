@@ -1,10 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Reviews.Queries;
 
-public sealed class GetReviewsByPropertyQueryHandler : IRequestHandler<GetReviewsByPropertyQuery, IReadOnlyList<ReviewDto>>
+public sealed class GetReviewsByPropertyQueryHandler : IRequestHandler<GetReviewsByPropertyQuery, IReadOnlyList<Review>>
 {
     private readonly IReviewRepository _reviewRepository;
 
@@ -13,16 +13,8 @@ public sealed class GetReviewsByPropertyQueryHandler : IRequestHandler<GetReview
         _reviewRepository = reviewRepository;
     }
 
-    public async Task<IReadOnlyList<ReviewDto>> Handle(GetReviewsByPropertyQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Review>> Handle(GetReviewsByPropertyQuery request, CancellationToken cancellationToken)
     {
-        var reviews = await _reviewRepository.GetByPropertyIdAsync(request.PropertyId, cancellationToken);
-        return reviews.Select(review => new ReviewDto
-        {
-            Id = review.Id,
-            Rating = review.Rating,
-            Comment = review.Comment,
-            UserId = review.UserId,
-            PropertyId = review.PropertyId
-        }).ToList();
+        return await _reviewRepository.GetByPropertyIdAsync(request.PropertyId, cancellationToken);
     }
 }

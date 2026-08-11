@@ -1,3 +1,4 @@
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,10 +15,12 @@ namespace RealEstateMarketplace.Api.Controllers;
 public class PropertiesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IMapper _mapper;
 
-    public PropertiesController(ISender sender)
+    public PropertiesController(ISender sender, IMapper mapper)
     {
         _sender = sender;
+        _mapper = mapper;
     }
 
     [HttpGet]
@@ -25,7 +28,7 @@ public class PropertiesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<PropertyDto>>> GetAll(CancellationToken cancellationToken)
     {
         var properties = await _sender.Send(new GetAllPropertiesQuery(), cancellationToken);
-        return Ok(properties);
+        return Ok(_mapper.Map<IReadOnlyList<PropertyDto>>(properties));
     }
 
     [HttpGet("{id:int}")]
@@ -33,7 +36,7 @@ public class PropertiesController : ControllerBase
     public async Task<ActionResult<PropertyDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var property = await _sender.Send(new GetPropertyByIdQuery { Id = id }, cancellationToken);
-        return property is null ? NotFound() : Ok(property);
+        return property is null ? NotFound() : Ok(_mapper.Map<PropertyDto>(property));
     }
 
     [HttpGet("owner/{ownerId:int}")]
@@ -41,10 +44,11 @@ public class PropertiesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<PropertyDto>>> GetByOwnerId(int ownerId, CancellationToken cancellationToken)
     {
         var properties = await _sender.Send(new GetPropertiesByOwnerIdQuery { OwnerId = ownerId }, cancellationToken);
-        return Ok(properties);
+        return Ok(_mapper.Map<IReadOnlyList<PropertyDto>>(properties));
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<ActionResult<PropertyDto>> Create([FromBody] CreatePropertyDto request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new CreatePropertyCommand

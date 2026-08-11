@@ -1,9 +1,9 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.PropertyFeatures.Commands;
 
-public sealed class UpdatePropertyFeatureCommand : IRequest<PropertyFeatureDto?>
+public sealed class UpdatePropertyFeatureCommand : IRequest<PropertyFeature?>
 {
     public int Id { get; set; }
     public string? Name { get; set; }

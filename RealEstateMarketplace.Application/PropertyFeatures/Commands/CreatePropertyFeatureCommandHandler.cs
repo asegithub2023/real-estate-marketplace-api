@@ -1,12 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
-using RealEstateMarketplace.Application.Mapping;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.PropertyFeatures.Commands;
 
-public sealed class CreatePropertyFeatureCommandHandler : IRequestHandler<CreatePropertyFeatureCommand, PropertyFeatureDto>
+public sealed class CreatePropertyFeatureCommandHandler : IRequestHandler<CreatePropertyFeatureCommand, PropertyFeature>
 {
     private readonly IPropertyFeatureRepository _repository;
 
@@ -15,7 +13,7 @@ public sealed class CreatePropertyFeatureCommandHandler : IRequestHandler<Create
         _repository = repository;
     }
 
-    public async Task<PropertyFeatureDto> Handle(CreatePropertyFeatureCommand request, CancellationToken cancellationToken)
+    public async Task<PropertyFeature> Handle(CreatePropertyFeatureCommand request, CancellationToken cancellationToken)
     {
         var existingFeature = await _repository.GetByNameAsync(request.Name, cancellationToken);
         if (existingFeature is not null)
@@ -30,6 +28,6 @@ public sealed class CreatePropertyFeatureCommandHandler : IRequestHandler<Create
         };
 
         await _repository.AddAsync(feature, cancellationToken);
-        return feature.ToDto();
+        return feature;
     }
 }

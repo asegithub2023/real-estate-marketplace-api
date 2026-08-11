@@ -1,10 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Favorites.Queries;
 
-public sealed class GetUserFavoritesQueryHandler : IRequestHandler<GetUserFavoritesQuery, IReadOnlyList<FavoriteDto>>
+public sealed class GetUserFavoritesQueryHandler : IRequestHandler<GetUserFavoritesQuery, IReadOnlyList<Favorite>>
 {
     private readonly IFavoriteRepository _favoriteRepository;
 
@@ -13,14 +13,8 @@ public sealed class GetUserFavoritesQueryHandler : IRequestHandler<GetUserFavori
         _favoriteRepository = favoriteRepository;
     }
 
-    public async Task<IReadOnlyList<FavoriteDto>> Handle(GetUserFavoritesQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Favorite>> Handle(GetUserFavoritesQuery request, CancellationToken cancellationToken)
     {
-        var favorites = await _favoriteRepository.GetByUserIdAsync(request.UserId, cancellationToken);
-        return favorites.Select(favorite => new FavoriteDto
-        {
-            Id = favorite.Id,
-            UserId = favorite.UserId,
-            PropertyId = favorite.PropertyId
-        }).ToList();
+        return await _favoriteRepository.GetByUserIdAsync(request.UserId, cancellationToken);
     }
 }

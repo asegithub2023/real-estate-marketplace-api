@@ -1,11 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
-using RealEstateMarketplace.Application.Mapping;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.PropertyFeatures.Queries;
 
-public sealed class GetAllPropertyFeaturesQueryHandler : IRequestHandler<GetAllPropertyFeaturesQuery, IReadOnlyList<PropertyFeatureDto>>
+public sealed class GetAllPropertyFeaturesQueryHandler : IRequestHandler<GetAllPropertyFeaturesQuery, IReadOnlyList<PropertyFeature>>
 {
     private readonly IPropertyFeatureRepository _repository;
 
@@ -14,9 +13,8 @@ public sealed class GetAllPropertyFeaturesQueryHandler : IRequestHandler<GetAllP
         _repository = repository;
     }
 
-    public async Task<IReadOnlyList<PropertyFeatureDto>> Handle(GetAllPropertyFeaturesQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<PropertyFeature>> Handle(GetAllPropertyFeaturesQuery request, CancellationToken cancellationToken)
     {
-        var features = await _repository.GetAllAsync(cancellationToken);
-        return features.Select(feature => feature.ToDto()).ToList();
+        return await _repository.GetAllAsync(cancellationToken);
     }
 }

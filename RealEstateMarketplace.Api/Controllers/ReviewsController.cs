@@ -1,3 +1,4 @@
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,24 +15,26 @@ namespace RealEstateMarketplace.Api.Controllers;
 public class ReviewsController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IMapper _mapper;
 
-    public ReviewsController(ISender sender)
+    public ReviewsController(ISender sender, IMapper mapper)
     {
         _sender = sender;
+        _mapper = mapper;
     }
 
     [HttpGet("property/{propertyId:int}")]
     public async Task<ActionResult<IReadOnlyList<ReviewDto>>> GetByPropertyId(int propertyId, CancellationToken cancellationToken)
     {
         var reviews = await _sender.Send(new GetReviewsByPropertyQuery { PropertyId = propertyId }, cancellationToken);
-        return Ok(reviews);
+        return Ok(_mapper.Map<IReadOnlyList<ReviewDto>>(reviews));
     }
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ReviewDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var review = await _sender.Send(new GetReviewByIdQuery { Id = id }, cancellationToken);
-        return review is null ? NotFound() : Ok(review);
+        return review is null ? NotFound() : Ok(_mapper.Map<ReviewDto>(review));
     }
 
     [HttpPost]

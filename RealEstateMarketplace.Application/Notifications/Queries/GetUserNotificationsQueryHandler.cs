@@ -1,10 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Notifications.Queries;
 
-public sealed class GetUserNotificationsQueryHandler : IRequestHandler<GetUserNotificationsQuery, IReadOnlyList<NotificationDto>>
+public sealed class GetUserNotificationsQueryHandler : IRequestHandler<GetUserNotificationsQuery, IReadOnlyList<Notification>>
 {
     private readonly INotificationRepository _notificationRepository;
 
@@ -13,16 +13,8 @@ public sealed class GetUserNotificationsQueryHandler : IRequestHandler<GetUserNo
         _notificationRepository = notificationRepository;
     }
 
-    public async Task<IReadOnlyList<NotificationDto>> Handle(GetUserNotificationsQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Notification>> Handle(GetUserNotificationsQuery request, CancellationToken cancellationToken)
     {
-        var notifications = await _notificationRepository.GetByUserIdAsync(request.UserId, cancellationToken);
-        return notifications.Select(notification => new NotificationDto
-        {
-            Id = notification.Id,
-            Title = notification.Title,
-            Message = notification.Message,
-            IsRead = notification.IsRead,
-            UserId = notification.UserId
-        }).ToList();
+        return await _notificationRepository.GetByUserIdAsync(request.UserId, cancellationToken);
     }
 }

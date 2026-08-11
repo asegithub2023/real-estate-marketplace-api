@@ -1,9 +1,9 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Reviews.Queries;
 
-public sealed class GetReviewsByPropertyQuery : IRequest<IReadOnlyList<ReviewDto>>
+public sealed class GetReviewsByPropertyQuery : IRequest<IReadOnlyList<Review>>
 {
     public int PropertyId { get; set; }
 }

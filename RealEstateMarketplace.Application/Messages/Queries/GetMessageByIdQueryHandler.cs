@@ -1,10 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Messages.Queries;
 
-public sealed class GetMessageByIdQueryHandler : IRequestHandler<GetMessageByIdQuery, MessageDto?>
+public sealed class GetMessageByIdQueryHandler : IRequestHandler<GetMessageByIdQuery, Message?>
 {
     private readonly IMessageRepository _messageRepository;
 
@@ -13,21 +13,8 @@ public sealed class GetMessageByIdQueryHandler : IRequestHandler<GetMessageByIdQ
         _messageRepository = messageRepository;
     }
 
-    public async Task<MessageDto?> Handle(GetMessageByIdQuery request, CancellationToken cancellationToken)
+    public async Task<Message?> Handle(GetMessageByIdQuery request, CancellationToken cancellationToken)
     {
-        var message = await _messageRepository.GetByIdAsync(request.Id, cancellationToken);
-        if (message is null)
-        {
-            return null;
-        }
-
-        return new MessageDto
-        {
-            Id = message.Id,
-            ConversationId = message.ConversationId,
-            SenderId = message.SenderId,
-            Content = message.Content,
-            SentAt = message.SentAt
-        };
+        return await _messageRepository.GetByIdAsync(request.Id, cancellationToken);
     }
 }

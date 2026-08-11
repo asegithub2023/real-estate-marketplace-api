@@ -1,9 +1,9 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Favorites.Queries;
 
-public sealed class GetUserFavoritesQuery : IRequest<IReadOnlyList<FavoriteDto>>
+public sealed class GetUserFavoritesQuery : IRequest<IReadOnlyList<Favorite>>
 {
     public int UserId { get; set; }
 }

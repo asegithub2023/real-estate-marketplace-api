@@ -1,9 +1,9 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Notifications.Commands;
 
-public sealed class CreateNotificationCommand : IRequest<NotificationDto>
+public sealed class CreateNotificationCommand : IRequest<Notification>
 {
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;

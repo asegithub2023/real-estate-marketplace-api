@@ -1,11 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Reports.Commands;
 
-public sealed class CreateReportCommandHandler : IRequestHandler<CreateReportCommand, ReportDto>
+public sealed class CreateReportCommandHandler : IRequestHandler<CreateReportCommand, Report>
 {
     private readonly IReportRepository _reportRepository;
     private readonly IUserRepository _userRepository;
@@ -21,7 +20,7 @@ public sealed class CreateReportCommandHandler : IRequestHandler<CreateReportCom
         _propertyRepository = propertyRepository;
     }
 
-    public async Task<ReportDto> Handle(CreateReportCommand request, CancellationToken cancellationToken)
+    public async Task<Report> Handle(CreateReportCommand request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
         var property = await _propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
@@ -40,12 +39,6 @@ public sealed class CreateReportCommandHandler : IRequestHandler<CreateReportCom
 
         await _reportRepository.AddAsync(report, cancellationToken);
 
-        return new ReportDto
-        {
-            Id = report.Id,
-            Reason = report.Reason,
-            UserId = report.UserId,
-            PropertyId = report.PropertyId
-        };
+        return report;
     }
 }

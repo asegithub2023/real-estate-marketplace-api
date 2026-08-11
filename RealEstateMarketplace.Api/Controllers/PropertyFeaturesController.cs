@@ -1,3 +1,4 @@
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,13 +11,15 @@ namespace RealEstateMarketplace.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class PropertyFeaturesController : ControllerBase
+public class FeaturesController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IMapper _mapper;
 
-    public PropertyFeaturesController(ISender sender)
+    public FeaturesController(ISender sender, IMapper mapper)
     {
         _sender = sender;
+        _mapper = mapper;
     }
 
     [HttpGet]
@@ -24,7 +27,7 @@ public class PropertyFeaturesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<PropertyFeatureDto>>> GetAll(CancellationToken cancellationToken)
     {
         var features = await _sender.Send(new GetAllPropertyFeaturesQuery(), cancellationToken);
-        return Ok(features);
+        return Ok(_mapper.Map<IReadOnlyList<PropertyFeatureDto>>(features));
     }
 
     [HttpGet("{id:int}")]
@@ -32,21 +35,21 @@ public class PropertyFeaturesController : ControllerBase
     public async Task<ActionResult<PropertyFeatureDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var feature = await _sender.Send(new GetPropertyFeatureByIdQuery { Id = id }, cancellationToken);
-        return feature is null ? NotFound() : Ok(feature);
+        return feature is null ? NotFound() : Ok(_mapper.Map<PropertyFeatureDto>(feature));
     }
 
     [HttpPost]
     public async Task<ActionResult<PropertyFeatureDto>> Create([FromBody] CreatePropertyFeatureDto request, CancellationToken cancellationToken)
     {
         var feature = await _sender.Send(new CreatePropertyFeatureCommand { Name = request.Name, Icon = request.Icon }, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = feature.Id }, feature);
+        return CreatedAtAction(nameof(GetById), new { id = feature.Id }, _mapper.Map<PropertyFeatureDto>(feature));
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<PropertyFeatureDto>> Update(int id, [FromBody] UpdatePropertyFeatureDto request, CancellationToken cancellationToken)
     {
         var feature = await _sender.Send(new UpdatePropertyFeatureCommand { Id = id, Name = request.Name, Icon = request.Icon }, cancellationToken);
-        return feature is null ? NotFound() : Ok(feature);
+        return feature is null ? NotFound() : Ok(_mapper.Map<PropertyFeatureDto>(feature));
     }
 
     [HttpDelete("{id:int}")]

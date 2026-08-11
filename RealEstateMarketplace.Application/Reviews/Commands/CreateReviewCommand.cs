@@ -1,10 +1,10 @@
 using MediatR;
 using RealEstateMarketplace.Application.Common;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Reviews.Commands;
 
-public sealed class CreateReviewCommand : IRequest<Result<ReviewDto, ReviewError>>
+public sealed class CreateReviewCommand : IRequest<Result<Review, ReviewError>>
 {
     public int Rating { get; set; }
     public string? Comment { get; set; }

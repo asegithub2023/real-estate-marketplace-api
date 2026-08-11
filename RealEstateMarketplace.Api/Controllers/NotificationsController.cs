@@ -1,3 +1,4 @@
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,20 +11,22 @@ namespace RealEstateMarketplace.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class NotificationsController : ControllerBase
+public class NotificationController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IMapper _mapper;
 
-    public NotificationsController(ISender sender)
+    public NotificationController(ISender sender, IMapper mapper)
     {
         _sender = sender;
+        _mapper = mapper;
     }
 
     [HttpGet("user/{userId:int}")]
     public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetByUserId(int userId, CancellationToken cancellationToken)
     {
         var notifications = await _sender.Send(new GetUserNotificationsQuery { UserId = userId }, cancellationToken);
-        return Ok(notifications);
+        return Ok(_mapper.Map<IReadOnlyList<NotificationDto>>(notifications));
     }
 
     [HttpPost]
@@ -44,6 +47,6 @@ public class NotificationsController : ControllerBase
     public async Task<ActionResult<NotificationDto>> MarkAsRead(int id, CancellationToken cancellationToken)
     {
         var notification = await _sender.Send(new MarkNotificationAsReadCommand { Id = id }, cancellationToken);
-        return notification is null ? NotFound() : Ok(notification);
+        return notification is null ? NotFound() : Ok(_mapper.Map<NotificationDto>(notification));
     }
 }

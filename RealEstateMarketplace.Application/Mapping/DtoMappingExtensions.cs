@@ -5,106 +5,96 @@ namespace RealEstateMarketplace.Application.Mapping;
 
 public static class DtoMappingExtensions
 {
-    public static AuthResponseDto ToDto(this User source)
-        => new()
-        {
-            UserId = source.Id,
-            FullName = source.FullName,
-            Email = source.Email,
-            Role = source.Role.ToString(),
-        };
+    public static FavoriteDto ToDto(this Favorite favorite) => new()
+    {
+        Id = favorite.Id,
+        UserId = favorite.UserId,
+        PropertyId = favorite.PropertyId
+    };
 
-    public static PropertyDto ToDto(this Property source)
-        => new()
-        {
-            Id = source.Id,
-            Title = source.Title,
-            Description = source.Description,
-            Price = source.Price,
-            City = source.City,
-            Address = source.Address,
-            Country = source.Country,
-            Bedrooms = source.Bedrooms,
-            Bathrooms = source.Bathrooms,
-            Rooms = source.Rooms,
-            Area = source.Area,
-            Status = source.Status,
-            OwnerId = source.OwnerId,
-            OwnerName = source.Owner?.FullName ?? string.Empty,
-            Images = source.Images.Select(image => image.ToDto()).ToList(),
-            Features = source.PropertyFeatures.Select(feature => feature.ToDto()).ToList(),
-        };
+    public static AuthResponseDto ToDto(this User user) => new()
+    {
+        UserId = user.Id,
+        FullName = user.FullName,
+        Email = user.Email,
+        Role = user.Role.ToString()
+    };
 
-    public static PropertyImageDto ToDto(this PropertyImage source)
-        => new()
-        {
-            Id = source.Id,
-            ImageUrl = source.ImageUrl,
-            PropertyId = source.PropertyId,
-        };
+    public static PropertyDto ToDto(this Property property) => new()
+    {
+        Id = property.Id,
+        Title = property.Title,
+        Description = property.Description,
+        Price = property.Price,
+        City = property.City,
+        Address = property.Address,
+        Country = property.Country,
+        Bedrooms = property.Bedrooms,
+        Bathrooms = property.Bathrooms,
+        Rooms = property.Rooms,
+        Area = property.Area,
+        Status = property.Status,
+        OwnerId = property.OwnerId,
+        OwnerName = property.Owner?.FullName ?? string.Empty,
+        Images = property.Images?.Select(image => image.ToDto()).ToList() ?? new List<PropertyImageDto>(),
+        Features = property.PropertyFeatures?.Select(feature => feature.ToDto()).ToList() ?? new List<PropertyFeatureDto>()
+    };
 
-    public static PropertyFeatureDto ToDto(this PropertyFeature source)
-        => new()
-        {
-            Id = source.Id,
-            Name = source.Name,
-            Icon = source.Icon,
-        };
+    public static PropertyImageDto ToDto(this PropertyImage image) => new()
+    {
+        Id = image.Id,
+        ImageUrl = image.ImageUrl,
+        PropertyId = image.PropertyId
+    };
 
-    public static FavoriteDto ToDto(this Favorite source)
-        => new()
-        {
-            Id = source.Id,
-            UserId = source.UserId,
-            PropertyId = source.PropertyId,
-        };
+    public static PropertyFeatureDto ToDto(this PropertyFeature feature) => new()
+    {
+        Id = feature.Id,
+        Name = feature.Name,
+        Icon = feature.Icon
+    };
 
-    public static ReviewDto ToDto(this Review source)
-        => new()
-        {
-            Id = source.Id,
-            Rating = source.Rating,
-            Comment = source.Comment,
-            UserId = source.UserId,
-            PropertyId = source.PropertyId,
-        };
+    public static ConversationDto ToDto(this Conversation conversation) => new()
+    {
+        Id = conversation.Id,
+        PropertyId = conversation.PropertyId,
+        BuyerId = conversation.BuyerId,
+        OwnerId = conversation.OwnerId,
+        CreatedAt = conversation.CreatedAt
+    };
 
-    public static NotificationDto ToDto(this Notification source)
-        => new()
-        {
-            Id = source.Id,
-            Title = source.Title,
-            Message = source.Message,
-            IsRead = source.IsRead,
-            UserId = source.UserId,
-        };
+    public static MessageDto ToDto(this Message message) => new()
+    {
+        Id = message.Id,
+        ConversationId = message.ConversationId,
+        SenderId = message.SenderId,
+        Content = message.Content,
+        SentAt = message.SentAt
+    };
 
-    public static ReportDto ToDto(this Report source)
-        => new()
-        {
-            Id = source.Id,
-            Reason = source.Reason,
-            UserId = source.UserId,
-            PropertyId = source.PropertyId,
-        };
+    public static NotificationDto ToDto(this Notification notification) => new()
+    {
+        Id = notification.Id,
+        Title = notification.Title,
+        Message = notification.Message,
+        IsRead = notification.IsRead,
+        UserId = notification.UserId
+    };
 
-    public static ConversationDto ToDto(this Conversation source)
-        => new()
-        {
-            Id = source.Id,
-            PropertyId = source.PropertyId,
-            BuyerId = source.BuyerId,
-            OwnerId = source.OwnerId,
-            CreatedAt = source.CreatedAt,
-        };
+    public static ReportDto ToDto(this Report report) => new()
+    {
+        Id = report.Id,
+        Reason = report.Reason,
+        UserId = report.UserId,
+        PropertyId = report.PropertyId
+    };
 
-    public static MessageDto ToDto(this Message source)
-        => new()
-        {
-            Id = source.Id,
-            ConversationId = source.ConversationId,
-            SenderId = source.SenderId,
-            Content = source.Content,
-            SentAt = source.SentAt,
-        };
+    public static ReviewDto ToDto(this Review review) => new()
+    {
+        Id = review.Id,
+        Rating = review.Rating,
+        Comment = review.Comment,
+        UserId = review.UserId,
+        PropertyId = review.PropertyId
+    };
 }

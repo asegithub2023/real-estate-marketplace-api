@@ -1,11 +1,10 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
-using RealEstateMarketplace.Application.Mapping;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Properties.Queries;
 
-public sealed class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuery, IReadOnlyList<PropertyDto>>
+public sealed class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropertiesQuery, IReadOnlyList<Property>>
 {
     private readonly IPropertyRepository _propertyRepository;
 
@@ -14,9 +13,8 @@ public sealed class GetAllPropertiesQueryHandler : IRequestHandler<GetAllPropert
         _propertyRepository = propertyRepository;
     }
 
-    public async Task<IReadOnlyList<PropertyDto>> Handle(GetAllPropertiesQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Property>> Handle(GetAllPropertiesQuery request, CancellationToken cancellationToken)
     {
-        var properties = await _propertyRepository.GetAllAsync(cancellationToken);
-        return properties.Select(property => property.ToDto()).ToList();
+        return await _propertyRepository.GetAllAsync(cancellationToken);
     }
 }

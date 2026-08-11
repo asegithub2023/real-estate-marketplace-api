@@ -1,4 +1,5 @@
 using System.Text;
+using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -29,6 +30,10 @@ builder.Services.AddHealthChecks()
 
 builder.Services.AddApplicationServices();
 builder.Services.AddMediatR(typeof(RealEstateMarketplace.Application.Reviews.Commands.CreateReviewCommand));
+builder.Services.AddAutoMapper(
+    typeof(RealEstateMarketplace.Api.Mapping.FavoritesProfile),
+    typeof(RealEstateMarketplace.Api.Mapping.ConversationMessageProfile),
+    typeof(RealEstateMarketplace.Api.Mapping.PropertiesProfile));
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 

@@ -1,12 +1,11 @@
 using MediatR;
 using RealEstateMarketplace.Application.Common;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
-using RealEstateMarketplace.Application.Mapping;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Properties.Commands;
 
-public sealed class UpdatePropertyCommandHandler : IRequestHandler<UpdatePropertyCommand, Result<PropertyDto, PropertyError>>
+public sealed class UpdatePropertyCommandHandler : IRequestHandler<UpdatePropertyCommand, Result<Property, PropertyError>>
 {
     private readonly IPropertyRepository _propertyRepository;
 
@@ -15,12 +14,12 @@ public sealed class UpdatePropertyCommandHandler : IRequestHandler<UpdatePropert
         _propertyRepository = propertyRepository;
     }
 
-    public async Task<Result<PropertyDto, PropertyError>> Handle(UpdatePropertyCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Property, PropertyError>> Handle(UpdatePropertyCommand request, CancellationToken cancellationToken)
     {
         var property = await _propertyRepository.GetByIdAsync(request.Id, cancellationToken);
         if (property is null)
         {
-            return Result.Failure<PropertyDto, PropertyError>(PropertyError.NotFound(request.Id));
+            return Result.Failure<Property, PropertyError>(PropertyError.NotFound(request.Id));
         }
 
         if (request.Title is not null)
@@ -79,6 +78,6 @@ public sealed class UpdatePropertyCommandHandler : IRequestHandler<UpdatePropert
         }
 
         await _propertyRepository.UpdateAsync(property, cancellationToken);
-        return Result.Success<PropertyDto, PropertyError>(property.ToDto());
+        return Result.Success<Property, PropertyError>(property);
     }
 }

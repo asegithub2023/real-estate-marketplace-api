@@ -1,12 +1,11 @@
 using MediatR;
 using RealEstateMarketplace.Application.Common;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Conversations.Commands;
 
-public sealed class CreateConversationCommandHandler : IRequestHandler<CreateConversationCommand, Result<ConversationDto, ConversationError>>
+public sealed class CreateConversationCommandHandler : IRequestHandler<CreateConversationCommand, Result<Conversation, ConversationError>>
 {
     private readonly IConversationRepository _conversationRepository;
     private readonly IUserRepository _userRepository;
@@ -22,14 +21,14 @@ public sealed class CreateConversationCommandHandler : IRequestHandler<CreateCon
         _propertyRepository = propertyRepository;
     }
 
-    public async Task<Result<ConversationDto, ConversationError>> Handle(CreateConversationCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Conversation, ConversationError>> Handle(CreateConversationCommand request, CancellationToken cancellationToken)
     {
         var buyer = await _userRepository.GetByIdAsync(request.BuyerId, cancellationToken);
         var owner = await _userRepository.GetByIdAsync(request.OwnerId, cancellationToken);
         var property = await _propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
         if (buyer is null || owner is null || property is null)
         {
-            return Result.Failure<ConversationDto, ConversationError>(ConversationError.UserOrPropertyNotFound());
+            return Result.Failure<Conversation, ConversationError>(ConversationError.UserOrPropertyNotFound());
         }
 
         var conversation = new Conversation
@@ -41,13 +40,6 @@ public sealed class CreateConversationCommandHandler : IRequestHandler<CreateCon
 
         await _conversationRepository.AddAsync(conversation, cancellationToken);
 
-        return Result.Success<ConversationDto, ConversationError>(new ConversationDto
-        {
-            Id = conversation.Id,
-            PropertyId = conversation.PropertyId,
-            BuyerId = conversation.BuyerId,
-            OwnerId = conversation.OwnerId,
-            CreatedAt = conversation.CreatedAt
-        });
+        return Result.Success<Conversation, ConversationError>(conversation);
     }
 }

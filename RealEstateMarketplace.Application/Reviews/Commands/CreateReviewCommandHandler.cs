@@ -1,12 +1,11 @@
 using MediatR;
 using RealEstateMarketplace.Application.Common;
-using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Reviews.Commands;
 
-public sealed class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, Result<ReviewDto, ReviewError>>
+public sealed class CreateReviewCommandHandler : IRequestHandler<CreateReviewCommand, Result<Review, ReviewError>>
 {
     private readonly IReviewRepository _reviewRepository;
     private readonly IUserRepository _userRepository;
@@ -22,14 +21,14 @@ public sealed class CreateReviewCommandHandler : IRequestHandler<CreateReviewCom
         _propertyRepository = propertyRepository;
     }
 
-    public async Task<Result<ReviewDto, ReviewError>> Handle(CreateReviewCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Review, ReviewError>> Handle(CreateReviewCommand request, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
         var property = await _propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
 
         if (user is null || property is null)
         {
-            return Result.Failure<ReviewDto, ReviewError>(ReviewError.UserOrPropertyNotFound());
+            return Result.Failure<Review, ReviewError>(ReviewError.UserOrPropertyNotFound());
         }
 
         var review = new Review
@@ -42,13 +41,6 @@ public sealed class CreateReviewCommandHandler : IRequestHandler<CreateReviewCom
 
         await _reviewRepository.AddAsync(review, cancellationToken);
 
-        return Result.Success<ReviewDto, ReviewError>(new ReviewDto
-        {
-            Id = review.Id,
-            Rating = review.Rating,
-            Comment = review.Comment,
-            UserId = review.UserId,
-            PropertyId = review.PropertyId
-        });
+        return Result.Success<Review, ReviewError>(review);
     }
 }

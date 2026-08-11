@@ -1,3 +1,4 @@
+using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,48 +12,44 @@ namespace RealEstateMarketplace.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class MessagesController : ControllerBase
+public class MessageController : ControllerBase
 {
     private readonly ISender _sender;
+    private readonly IMapper _mapper;
 
-    public MessagesController(ISender sender)
+    public MessageController(ISender sender, IMapper mapper)
     {
         _sender = sender;
+        _mapper = mapper;
     }
 
     [HttpGet("conversation/{conversationId:int}")]
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> GetByConversationId(int conversationId, CancellationToken cancellationToken)
     {
         var messages = await _sender.Send(new GetConversationMessagesQuery { ConversationId = conversationId }, cancellationToken);
-        return Ok(messages);
+        return Ok(_mapper.Map<IReadOnlyList<MessageDto>>(messages));
     }
 
     [HttpPost]
     public async Task<ActionResult<MessageDto>> Create([FromBody] CreateMessageDto request, CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(new CreateMessageCommand
-        {
-            ConversationId = request.ConversationId,
-            SenderId = request.SenderId,
-            Content = request.Content
-        }, cancellationToken);
+        var command = _mapper.Map<CreateMessageCommand>(request);
+        var result = await _sender.Send(command, cancellationToken);
 
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetByConversationId), new { conversationId = result.Value!.ConversationId }, result.Value)
+            ? CreatedAtAction(nameof(GetByConversationId), new { conversationId = result.Value!.ConversationId }, _mapper.Map<MessageDto>(result.Value))
             : BadRequest(result.Error!.Message);
     }
 
     [HttpPut("{id:int}")]
     public async Task<ActionResult<MessageDto>> Update(int id, [FromBody] UpdateMessageDto request, CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(new UpdateMessageCommand
-        {
-            Id = id,
-            Content = request.Content
-        }, cancellationToken);
+        var command = _mapper.Map<UpdateMessageCommand>(request);
+        command.Id = id;
+        var result = await _sender.Send(command, cancellationToken);
 
         return result.IsSuccess
-            ? Ok(result.Value!)
+            ? Ok(_mapper.Map<MessageDto>(result.Value!))
             : result.Error!.Code == "message_not_found"
                 ? NotFound(result.Error.Message)
                 : BadRequest(result.Error.Message);

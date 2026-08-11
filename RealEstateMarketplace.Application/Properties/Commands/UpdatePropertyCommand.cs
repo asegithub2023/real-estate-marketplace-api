@@ -1,10 +1,10 @@
 using MediatR;
 using RealEstateMarketplace.Application.Common;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Properties.Commands;
 
-public sealed class UpdatePropertyCommand : IRequest<Result<PropertyDto, PropertyError>>
+public sealed class UpdatePropertyCommand : IRequest<Result<Property, PropertyError>>
 {
     public int Id { get; set; }
     public string? Title { get; set; }

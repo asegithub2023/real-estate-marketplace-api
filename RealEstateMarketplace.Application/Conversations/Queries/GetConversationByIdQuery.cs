@@ -1,9 +1,9 @@
 using MediatR;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Conversations.Queries;
 
-public sealed class GetConversationByIdQuery : IRequest<ConversationDto?>
+public sealed class GetConversationByIdQuery : IRequest<Conversation?>
 {
     public int Id { get; set; }
 }

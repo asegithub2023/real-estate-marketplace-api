@@ -1,10 +1,10 @@
 using MediatR;
 using RealEstateMarketplace.Application.Common;
-using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Conversations.Commands;
 
-public sealed class UpdateConversationCommand : IRequest<Result<ConversationDto, ConversationError>>
+public sealed class UpdateConversationCommand : IRequest<Result<Conversation, ConversationError>>
 {
     public int Id { get; set; }
     public int? PropertyId { get; set; }
