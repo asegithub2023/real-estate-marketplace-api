@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
+using RealEstateMarketplace.Application.Interfaces.Services;
 using RealEstateMarketplace.Application.Properties.Commands;
 using RealEstateMarketplace.Application.Properties.Queries;
 
@@ -16,27 +17,32 @@ public class PropertiesController : ControllerBase
 {
     private readonly ISender _sender;
     private readonly IMapper _mapper;
+    private readonly ICachedPropertyService _cachedPropertyService;
 
-    public PropertiesController(ISender sender, IMapper mapper)
+    public PropertiesController(
+        ISender sender,
+        IMapper mapper,
+        ICachedPropertyService cachedPropertyService)
     {
         _sender = sender;
         _mapper = mapper;
+        _cachedPropertyService = cachedPropertyService;
     }
 
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<PropertyDto>>> GetAll(CancellationToken cancellationToken)
     {
-        var properties = await _sender.Send(new GetAllPropertiesQuery(), cancellationToken);
-        return Ok(_mapper.Map<IReadOnlyList<PropertyDto>>(properties));
+        var properties = await _cachedPropertyService.GetAllPropertiesAsync(cancellationToken);
+        return Ok(properties);
     }
 
     [HttpGet("{id:int}")]
     [AllowAnonymous]
     public async Task<ActionResult<PropertyDto>> GetById(int id, CancellationToken cancellationToken)
     {
-        var property = await _sender.Send(new GetPropertyByIdQuery { Id = id }, cancellationToken);
-        return property is null ? NotFound() : Ok(_mapper.Map<PropertyDto>(property));
+        var property = await _cachedPropertyService.GetPropertyAsync(id, cancellationToken);
+        return property is null ? NotFound() : Ok(property);
     }
 
     [HttpGet("owner/{ownerId:int}")]
@@ -67,11 +73,15 @@ public class PropertiesController : ControllerBase
             OwnerId = request.OwnerId
         }, cancellationToken);
 
-        return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
-            : result.Error!.Code == "owner_not_found"
+        if (!result.IsSuccess)
+        {
+            return result.Error!.Code == "owner_not_found"
                 ? NotFound(result.Error.Message)
                 : BadRequest(result.Error.Message);
+        }
+
+        await _cachedPropertyService.InvalidatePropertyCacheAsync(null, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value);
     }
 
     [HttpPut("{id:int}")]
@@ -93,13 +103,25 @@ public class PropertiesController : ControllerBase
             Status = request.Status
         }, cancellationToken);
 
-        return result.IsSuccess ? Ok(result.Value!) : NotFound();
+        if (!result.IsSuccess)
+        {
+            return NotFound();
+        }
+
+        await _cachedPropertyService.InvalidatePropertyCacheAsync(id, cancellationToken);
+        return Ok(result.Value!);
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new DeletePropertyCommand { Id = id }, cancellationToken);
-        return result.IsSuccess ? NoContent() : NotFound();
+        if (!result.IsSuccess)
+        {
+            return NotFound();
+        }
+
+        await _cachedPropertyService.InvalidatePropertyCacheAsync(id, cancellationToken);
+        return NoContent();
     }
 }

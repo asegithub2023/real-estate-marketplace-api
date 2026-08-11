@@ -1,10 +1,15 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.IdentityModel.Tokens;
 using MediatR;
 using RealEstateMarketplace.Api.ExceptionHandlers;
+using RealEstateMarketplace.Api.RateLimiting;
 using Scalar.AspNetCore;
 using RealEstateMarketplace.Api.Filters;
 using RealEstateMarketplace.Api.Middlewares;
@@ -12,6 +17,19 @@ using RealEstateMarketplace.Api.Security;
 using RealEstateMarketplace.Application.Reviews.Commands;
 using RealEstateMarketplace.Infrastructure;
 using RealEstateMarketplace.Infrastructure.Persistence;
+
+//using Polly;
+//using Polly.CircuitBreaker;
+//using Polly.Retry;
+//using Polly.Timeout;
+
+//using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+//using Microsoft.Extensions.Diagnostics.HealthChecks;
+//using HealthChecks.NpgSql;
+//using OpenTelemetry.Instrumentation.Runtime;
+//using OpenTelemetry.Metrics;
+//using OpenTelemetry.Resources;
+//using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +91,102 @@ builder.Services.AddCors(options =>
     });
 });
 
+
+
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+    {
+        var (partitionKey, tier) = ApiKeyResolver.Resolve(httpContext);
+
+        return tier switch
+        {
+            ApiKeyTier.Paid => RateLimitPartition.GetTokenBucketLimiter(
+                partitionKey: $"paid:{partitionKey}",
+                factory: _ => new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 200,
+                    TokensPerPeriod = 100,
+                    ReplenishmentPeriod = TimeSpan.FromSeconds(10),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                }),
+            ApiKeyTier.Free => RateLimitPartition.GetTokenBucketLimiter(
+                partitionKey: $"free:{partitionKey}",
+                factory: _ => new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 30,
+                    TokensPerPeriod = 10,
+                    ReplenishmentPeriod = TimeSpan.FromSeconds(10),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                }),
+            _ => RateLimitPartition.GetTokenBucketLimiter(
+                partitionKey: $"anon:{partitionKey}",
+                factory: _ => new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 10,
+                    TokensPerPeriod = 5,
+                    ReplenishmentPeriod = TimeSpan.FromSeconds(10),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                })
+        };
+    });
+
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, ct) =>
+    {
+        var retryAfter = "10";
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var ts))
+            retryAfter = ((int)ts.TotalSeconds).ToString();
+
+        context.HttpContext.Response.Headers.RetryAfter = retryAfter;
+        context.HttpContext.Response.ContentType = "application/problem+json";
+
+        await context.HttpContext.Response.WriteAsJsonAsync(new ProblemDetails
+        {
+            Title = "Rate limit exceeded",
+            Detail = $"Too many requests. Retry after {retryAfter} seconds.",
+            Status = StatusCodes.Status429TooManyRequests,
+            Type = "https://tms.local/errors/rate_limit_exceeded"
+        }, ct);
+    };
+
+    options.AddConcurrencyLimiter("transcripts", opt =>
+    {
+        opt.PermitLimit = 5;
+        opt.QueueLimit = 20;
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+});
+
+builder.Services.AddHybridCache(options =>
+{
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        Expiration = TimeSpan.FromMinutes(10),
+        LocalCacheExpiration = TimeSpan.FromMinutes(2)
+    };
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -91,6 +205,7 @@ if (!app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseRouting();
 app.UseCors("AllowAngularApp");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
