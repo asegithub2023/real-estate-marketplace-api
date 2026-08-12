@@ -5,11 +5,15 @@ using Microsoft.AspNetCore.Mvc;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Favorites.Commands;
 using RealEstateMarketplace.Application.Favorites.Queries;
+using Scalar.AspNetCore;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/favorites")]
+[Tags("Favorites")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
 [Authorize]
 public class FavoritesController : ControllerBase
 {
@@ -23,6 +27,9 @@ public class FavoritesController : ControllerBase
     }
 
     [HttpGet("user/{userId:int}")]
+    [ProducesResponseType(typeof(IReadOnlyList<FavoriteDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Get favorites for a user")]
+    [EndpointDescription("Returns the list of favorite properties for the specified user.")]
     public async Task<ActionResult<IReadOnlyList<FavoriteDto>>> GetByUserId(
         int userId,
         CancellationToken cancellationToken)
@@ -35,6 +42,11 @@ public class FavoritesController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(FavoriteDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Add a favorite property")]
+    [EndpointDescription("Creates a new favorite entry for the authenticated user.")]
     public async Task<ActionResult<FavoriteDto>> Create(
         [FromBody] CreateFavoriteDto request,
         CancellationToken cancellationToken)
@@ -54,6 +66,10 @@ public class FavoritesController : ControllerBase
     }
 
     [HttpDelete("user/{userId:int}/property/{propertyId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Remove a favorite property")]
+    [EndpointDescription("Deletes the favorite entry for the given user and property.")]
     public async Task<ActionResult> Delete(
         int userId,
         int propertyId,

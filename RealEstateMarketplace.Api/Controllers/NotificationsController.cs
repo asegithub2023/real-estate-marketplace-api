@@ -5,11 +5,15 @@ using Microsoft.AspNetCore.Mvc;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Notifications.Commands;
 using RealEstateMarketplace.Application.Notifications.Queries;
+using Scalar.AspNetCore;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/notifications")]
+[Tags("Notifications")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
 [Authorize]
 public class NotificationController : ControllerBase
 {
@@ -23,6 +27,9 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet("user/{userId:int}")]
+    [ProducesResponseType(typeof(IReadOnlyList<NotificationDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Get notifications for a user")]
+    [EndpointDescription("Returns the list of notifications for the specified user.")]
     public async Task<ActionResult<IReadOnlyList<NotificationDto>>> GetByUserId(int userId, CancellationToken cancellationToken)
     {
         var notifications = await _sender.Send(new GetUserNotificationsQuery { UserId = userId }, cancellationToken);
@@ -30,6 +37,10 @@ public class NotificationController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(NotificationDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [EndpointSummary("Create a notification")]
+    [EndpointDescription("Creates a new notification for a user.")]
     public async Task<ActionResult<NotificationDto>> Create([FromBody] CreateNotificationDto request, CancellationToken cancellationToken)
     {
         var notification = await _sender.Send(new CreateNotificationCommand
@@ -44,6 +55,10 @@ public class NotificationController : ControllerBase
     }
 
     [HttpPut("{id:int}/read")]
+    [ProducesResponseType(typeof(NotificationDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Mark notification as read")]
+    [EndpointDescription("Marks the specified notification as read and returns the updated entity.")]
     public async Task<ActionResult<NotificationDto>> MarkAsRead(int id, CancellationToken cancellationToken)
     {
         var notification = await _sender.Send(new MarkNotificationAsReadCommand { Id = id }, cancellationToken);

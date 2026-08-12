@@ -5,11 +5,15 @@ using Microsoft.AspNetCore.Mvc;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Reports.Commands;
 using RealEstateMarketplace.Application.Reports.Queries;
+using Scalar.AspNetCore;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/reports")]
+[Tags("Reports")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
 [Authorize]
 public class ReportsController : ControllerBase
 {
@@ -23,6 +27,9 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("property/{propertyId:int}")]
+    [ProducesResponseType(typeof(IReadOnlyList<ReportDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Get reports by property")]
+    [EndpointDescription("Returns all reports associated with the specified property.")]
     public async Task<ActionResult<IReadOnlyList<ReportDto>>> GetByPropertyId(int propertyId, CancellationToken cancellationToken)
     {
         var reports = await _sender.Send(new GetReportsByPropertyIdQuery { PropertyId = propertyId }, cancellationToken);
@@ -30,6 +37,10 @@ public class ReportsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(ReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Get a report by ID")]
+    [EndpointDescription("Returns the report matching the specified identifier.")]
     public async Task<ActionResult<ReportDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var report = await _sender.Send(new GetReportByIdQuery { Id = id }, cancellationToken);
@@ -37,6 +48,10 @@ public class ReportsController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(ReportDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [EndpointSummary("Create a report")]
+    [EndpointDescription("Creates a new report for a property.")]
     public async Task<ActionResult<ReportDto>> Create([FromBody] CreateReportDto request, CancellationToken cancellationToken)
     {
         var report = await _sender.Send(new CreateReportCommand
@@ -50,6 +65,10 @@ public class ReportsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(ReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Update a report")]
+    [EndpointDescription("Updates an existing report by ID.")]
     public async Task<ActionResult<ReportDto>> Update(int id, [FromBody] UpdateReportDto request, CancellationToken cancellationToken)
     {
         var report = await _sender.Send(new UpdateReportCommand
@@ -62,6 +81,10 @@ public class ReportsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Delete a report")]
+    [EndpointDescription("Deletes the specified report.")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var deleted = await _sender.Send(new DeleteReportCommand { Id = id }, cancellationToken);
