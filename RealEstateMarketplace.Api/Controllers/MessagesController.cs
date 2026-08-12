@@ -6,11 +6,15 @@ using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Messages.Commands;
 using RealEstateMarketplace.Application.Messages.Queries;
+using Scalar.AspNetCore;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/messages")]
+[Tags("Messages")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
 [Authorize]
 public class MessageController : ControllerBase
 {
@@ -24,6 +28,9 @@ public class MessageController : ControllerBase
     }
 
     [HttpGet("conversation/{conversationId:int}")]
+    [ProducesResponseType(typeof(IReadOnlyList<MessageDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Get messages in a conversation")]
+    [EndpointDescription("Returns all messages belonging to the specified conversation.")]
     public async Task<ActionResult<IReadOnlyList<MessageDto>>> GetByConversationId(int conversationId, CancellationToken cancellationToken)
     {
         var messages = await _sender.Send(new GetConversationMessagesQuery { ConversationId = conversationId }, cancellationToken);
@@ -31,6 +38,10 @@ public class MessageController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(MessageDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [EndpointSummary("Create a message")]
+    [EndpointDescription("Sends a new message in an existing conversation.")]
     public async Task<ActionResult<MessageDto>> Create([FromBody] CreateMessageDto request, CancellationToken cancellationToken)
     {
         var command = _mapper.Map<CreateMessageCommand>(request);
@@ -42,6 +53,11 @@ public class MessageController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(MessageDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Update a message")]
+    [EndpointDescription("Updates the text of an existing message by ID.")]
     public async Task<ActionResult<MessageDto>> Update(int id, [FromBody] UpdateMessageDto request, CancellationToken cancellationToken)
     {
         var command = _mapper.Map<UpdateMessageCommand>(request);
@@ -56,6 +72,10 @@ public class MessageController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Delete a message")]
+    [EndpointDescription("Deletes a message by its identifier.")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var deleted = await _sender.Send(new DeleteMessageCommand { Id = id }, cancellationToken);

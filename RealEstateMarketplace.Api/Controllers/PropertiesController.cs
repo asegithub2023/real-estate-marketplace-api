@@ -7,11 +7,15 @@ using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Services;
 using RealEstateMarketplace.Application.Properties.Commands;
 using RealEstateMarketplace.Application.Properties.Queries;
+using Scalar.AspNetCore;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/properties")]
+[Tags("Properties")]
+[Produces("application/json")]
+[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
 [Authorize]
 public class PropertiesController : ControllerBase
 {
@@ -31,6 +35,9 @@ public class PropertiesController : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<PropertyDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Get all properties")]
+    [EndpointDescription("Returns all available properties.")]
     public async Task<ActionResult<IReadOnlyList<PropertyDto>>> GetAll(CancellationToken cancellationToken)
     {
         var properties = await _cachedPropertyService.GetAllPropertiesAsync(cancellationToken);
@@ -39,6 +46,10 @@ public class PropertiesController : ControllerBase
 
     [HttpGet("{id:int}")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(PropertyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Get a property by ID")]
+    [EndpointDescription("Returns the property matching the specified identifier.")]
     public async Task<ActionResult<PropertyDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var property = await _cachedPropertyService.GetPropertyAsync(id, cancellationToken);
@@ -47,6 +58,9 @@ public class PropertiesController : ControllerBase
 
     [HttpGet("owner/{ownerId:int}")]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(IReadOnlyList<PropertyDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Get properties by owner")]
+    [EndpointDescription("Returns all properties owned by the specified user.")]
     public async Task<ActionResult<IReadOnlyList<PropertyDto>>> GetByOwnerId(int ownerId, CancellationToken cancellationToken)
     {
         var properties = await _sender.Send(new GetPropertiesByOwnerIdQuery { OwnerId = ownerId }, cancellationToken);
@@ -55,6 +69,11 @@ public class PropertiesController : ControllerBase
 
     [HttpPost]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(PropertyDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Create a property")]
+    [EndpointDescription("Creates a new property record.")]
     public async Task<ActionResult<PropertyDto>> Create([FromBody] CreatePropertyDto request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new CreatePropertyCommand
@@ -85,6 +104,10 @@ public class PropertiesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(PropertyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Update a property")]
+    [EndpointDescription("Updates an existing property by ID.")]
     public async Task<ActionResult<PropertyDto>> Update(int id, [FromBody] UpdatePropertyDto request, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new UpdatePropertyCommand
@@ -113,6 +136,10 @@ public class PropertiesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Delete a property")]
+    [EndpointDescription("Deletes the specified property.")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new DeletePropertyCommand { Id = id }, cancellationToken);

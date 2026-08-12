@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using System.Text;
 using System.Threading.RateLimiting;
 using AutoMapper;
