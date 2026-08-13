@@ -22,15 +22,18 @@ public class PropertiesController : ControllerBase
     private readonly ISender _sender;
     private readonly IMapper _mapper;
     private readonly ICachedPropertyService _cachedPropertyService;
+    private readonly IPropertyService _propertyService;
 
     public PropertiesController(
         ISender sender,
         IMapper mapper,
-        ICachedPropertyService cachedPropertyService)
+        ICachedPropertyService cachedPropertyService,
+        IPropertyService propertyService)
     {
         _sender = sender;
         _mapper = mapper;
         _cachedPropertyService = cachedPropertyService;
+        _propertyService = propertyService;
     }
 
     [HttpGet]
@@ -42,6 +45,17 @@ public class PropertiesController : ControllerBase
     {
         var properties = await _cachedPropertyService.GetAllPropertiesAsync(cancellationToken);
         return Ok(properties);
+    }
+
+    [HttpGet("search")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PagedResponse<PropertyDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Search and filter properties")]
+    [EndpointDescription("Returns paginated properties with search, filtering, and sorting capabilities.")]
+    public async Task<ActionResult<PagedResponse<PropertyDto>>> Search([FromQuery] PagedRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _propertyService.GetPropertiesAsync(request, cancellationToken);
+        return Ok(result);
     }
 
     [HttpGet("{id:int}")]
