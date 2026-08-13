@@ -35,6 +35,19 @@ public class PropertyService : IPropertyService
         return properties.Select(property => property.ToDto()).ToList();
     }
 
+    public async Task<PagedResponse<PropertyDto>> GetPropertiesAsync(PagedRequest request, CancellationToken cancellationToken = default)
+    {
+        var (items, totalCount) = await _propertyRepository.GetPagedAsync(request, cancellationToken);
+        
+        return new PagedResponse<PropertyDto>
+        {
+            Items = items.Select(property => property.ToDto()).ToList(),
+            TotalCount = totalCount,
+            Page = request.Page,
+            PageSize = request.PageSize
+        };
+    }
+
     public async Task<PropertyDto> CreateAsync(CreatePropertyDto request, CancellationToken cancellationToken = default)
     {
         var owner = await _userRepository.GetByIdAsync(request.OwnerId, cancellationToken);
