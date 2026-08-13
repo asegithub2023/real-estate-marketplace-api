@@ -11,7 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using MediatR;
 using RealEstateMarketplace.Api.ExceptionHandlers;
 using RealEstateMarketplace.Api.RateLimiting;
-using Scalar.AspNetCore;
+using RealEstateMarketplace.Api.Utilities;
 using RealEstateMarketplace.Api.Filters;
 using RealEstateMarketplace.Api.Middlewares;
 using RealEstateMarketplace.Api.Security;
@@ -173,8 +173,9 @@ builder.Services.AddHybridCache(options =>
     };
 });
 
-
-
+// Add HATEOAS support
+builder.Services.AddScoped<IHateoasHelper, HateoasHelper>();
+builder.Services.AddHttpContextAccessor();
 
 
 

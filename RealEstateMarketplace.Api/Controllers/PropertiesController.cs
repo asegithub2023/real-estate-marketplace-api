@@ -2,6 +2,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Api.Utilities;
 using RealEstateMarketplace.Application.Common;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Services;
@@ -23,17 +24,20 @@ public class PropertiesController : ControllerBase
     private readonly IMapper _mapper;
     private readonly ICachedPropertyService _cachedPropertyService;
     private readonly IPropertyService _propertyService;
+    private readonly IHateoasHelper _hateoasHelper;
 
     public PropertiesController(
         ISender sender,
         IMapper mapper,
         ICachedPropertyService cachedPropertyService,
-        IPropertyService propertyService)
+        IPropertyService propertyService,
+        IHateoasHelper hateoasHelper)
     {
         _sender = sender;
         _mapper = mapper;
         _cachedPropertyService = cachedPropertyService;
         _propertyService = propertyService;
+        _hateoasHelper = hateoasHelper;
     }
 
     [HttpGet]
@@ -49,25 +53,56 @@ public class PropertiesController : ControllerBase
 
     [HttpGet("search")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(PagedResponse<PropertyDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(HateoasPagedResponse<PropertyDto>), StatusCodes.Status200OK)]
     [EndpointSummary("Search and filter properties")]
-    [EndpointDescription("Returns paginated properties with search, filtering, and sorting capabilities.")]
-    public async Task<ActionResult<PagedResponse<PropertyDto>>> Search([FromQuery] PagedRequest request, CancellationToken cancellationToken)
+    [EndpointDescription("Returns paginated properties with search, filtering, and sorting capabilities. Includes HATEOAS links for navigation.")]
+    public async Task<ActionResult<HateoasPagedResponse<PropertyDto>>> GetProperties([FromQuery] PagedRequest request, CancellationToken cancellationToken)
     {
         var result = await _propertyService.GetPropertiesAsync(request, cancellationToken);
-        return Ok(result);
+
+        var response = new HateoasPagedResponse<PropertyDto>
+        {
+            Data = result.Items,
+            Meta = new PageMetadata
+            {
+                Page = result.Page,
+                PageSize = result.PageSize,
+                TotalCount = result.TotalCount,
+                TotalPages = result.TotalPages,
+                HasNext = result.HasNext,
+                HasPrevious = result.HasPrevious
+            },
+            Links = _hateoasHelper.GeneratePropertyListLinks(
+                result.Page,
+                result.TotalPages,
+                result.PageSize,
+                request.Search,
+                request.OrderBy,
+                request.Descending)
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("{id:int}")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(PropertyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(HateoasResponse<PropertyDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [EndpointSummary("Get a property by ID")]
-    [EndpointDescription("Returns the property matching the specified identifier.")]
-    public async Task<ActionResult<PropertyDto>> GetById(int id, CancellationToken cancellationToken)
+    [EndpointDescription("Returns the property matching the specified identifier with HATEOAS links.")]
+    public async Task<ActionResult<HateoasResponse<PropertyDto>>> GetPropertyById(int id, CancellationToken cancellationToken)
     {
         var property = await _cachedPropertyService.GetPropertyAsync(id, cancellationToken);
-        return property is null ? NotFound() : Ok(property);
+        if (property is null)
+            return NotFound();
+
+        var response = new HateoasResponse<PropertyDto>
+        {
+            Data = property,
+            Links = _hateoasHelper.GeneratePropertyResourceLinks(id)
+        };
+
+        return Ok(response);
     }
 
     [HttpGet("owner/{ownerId:int}")]
@@ -114,7 +149,7 @@ public class PropertiesController : ControllerBase
         }
 
         await _cachedPropertyService.InvalidatePropertyCacheAsync(null, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value);
+        return CreatedAtAction(nameof(GetPropertyById), new { id = result.Value!.Id }, result.Value);
     }
 
     [HttpPut("{id:int}")]
