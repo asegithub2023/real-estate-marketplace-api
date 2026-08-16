@@ -1,4 +1,5 @@
 using MediatR;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateMarketplace.Application.Common;
@@ -9,10 +10,11 @@ using Scalar.AspNetCore;
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Tags("Auth")]
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+[ApiVersion("1.0")]
 //[AllowAnonymous]
 public class AuthController : ControllerBase
 {

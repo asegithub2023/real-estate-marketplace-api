@@ -1,4 +1,5 @@
 using AutoMapper;
+using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +14,12 @@ using Scalar.AspNetCore;
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
-[Route("api/properties")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Tags("Properties")]
 [Produces("application/json")]
 [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
 [Authorize]
+[ApiVersion("1.0")]
 public class PropertiesController : ControllerBase
 {
     private readonly ISender _sender;

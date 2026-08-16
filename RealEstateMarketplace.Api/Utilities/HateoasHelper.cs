@@ -1,3 +1,5 @@
+using Asp.Versioning;
+using Microsoft.AspNetCore.Routing;
 using RealEstateMarketplace.Application.DTOs;
 
 namespace RealEstateMarketplace.Api.Utilities;
@@ -50,6 +52,28 @@ public class HateoasHelper : IHateoasHelper
         _httpContextAccessor = httpContextAccessor;
     }
 
+    private static string GetVersionedRouteValue(HttpContext httpContext)
+    {
+        if (httpContext.Request.RouteValues.TryGetValue("version", out var versionValue) && versionValue is not null)
+        {
+            return versionValue.ToString() ?? "1.0";
+        }
+
+        return "1.0";
+    }
+
+    private static object BuildVersionedRouteValues(HttpContext httpContext, object routeValues)
+    {
+        var values = new RouteValueDictionary(routeValues);
+
+        if (!values.ContainsKey("version"))
+        {
+            values["version"] = GetVersionedRouteValue(httpContext);
+        }
+
+        return values;
+    }
+
     public List<LinkDto> GeneratePropertyListLinks(int currentPage, int totalPages, int pageSize, string? search = null, string? orderBy = null, bool descending = false)
     {
         var links = new List<LinkDto>();
@@ -58,12 +82,11 @@ public class HateoasHelper : IHateoasHelper
         if (httpContext == null)
             return links;
 
-        // Self link
         var selfLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetProperties",
             controller: "Properties",
-            values: new { page = currentPage, pageSize, search, orderBy, descending }
+            values: BuildVersionedRouteValues(httpContext, new { page = currentPage, pageSize, search, orderBy, descending })
         );
 
         if (selfLink != null)
@@ -76,12 +99,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // First page link
         var firstLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetProperties",
             controller: "Properties",
-            values: new { page = 1, pageSize, search, orderBy, descending }
+            values: BuildVersionedRouteValues(httpContext, new { page = 1, pageSize, search, orderBy, descending })
         );
 
         if (firstLink != null)
@@ -94,14 +116,13 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Last page link
         if (totalPages > 0)
         {
             var lastLink = _linkGenerator.GetPathByAction(
                 httpContext,
                 action: "GetProperties",
                 controller: "Properties",
-                values: new { page = totalPages, pageSize, search, orderBy, descending }
+                values: BuildVersionedRouteValues(httpContext, new { page = totalPages, pageSize, search, orderBy, descending })
             );
 
             if (lastLink != null)
@@ -115,14 +136,13 @@ public class HateoasHelper : IHateoasHelper
             }
         }
 
-        // Previous page link
         if (currentPage > 1)
         {
             var prevLink = _linkGenerator.GetPathByAction(
                 httpContext,
                 action: "GetProperties",
                 controller: "Properties",
-                values: new { page = currentPage - 1, pageSize, search, orderBy, descending }
+                values: BuildVersionedRouteValues(httpContext, new { page = currentPage - 1, pageSize, search, orderBy, descending })
             );
 
             if (prevLink != null)
@@ -136,14 +156,13 @@ public class HateoasHelper : IHateoasHelper
             }
         }
 
-        // Next page link
         if (currentPage < totalPages)
         {
             var nextLink = _linkGenerator.GetPathByAction(
                 httpContext,
                 action: "GetProperties",
                 controller: "Properties",
-                values: new { page = currentPage + 1, pageSize, search, orderBy, descending }
+                values: BuildVersionedRouteValues(httpContext, new { page = currentPage + 1, pageSize, search, orderBy, descending })
             );
 
             if (nextLink != null)
@@ -157,11 +176,11 @@ public class HateoasHelper : IHateoasHelper
             }
         }
 
-        // Create property link (POST)
         var createLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "CreateProperty",
-            controller: "Properties"
+            controller: "Properties",
+            values: BuildVersionedRouteValues(httpContext, new { })
         );
 
         if (createLink != null)
@@ -185,12 +204,11 @@ public class HateoasHelper : IHateoasHelper
         if (httpContext == null)
             return links;
 
-        // Self link
         var selfLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetPropertyById",
             controller: "Properties",
-            values: new { id = propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { id = propertyId })
         );
 
         if (selfLink != null)
@@ -203,12 +221,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Update link
         var updateLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "UpdateProperty",
             controller: "Properties",
-            values: new { id = propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { id = propertyId })
         );
 
         if (updateLink != null)
@@ -221,12 +238,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Delete link
         var deleteLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "DeleteProperty",
             controller: "Properties",
-            values: new { id = propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { id = propertyId })
         );
 
         if (deleteLink != null)
@@ -239,12 +255,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Reviews link
         var reviewsLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetPropertyReviews",
             controller: "Reviews",
-            values: new { propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { propertyId })
         );
 
         if (reviewsLink != null)
@@ -257,12 +272,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Add to favorites link
         var favoritesLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "AddFavorite",
             controller: "Favorites",
-            values: new { propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { propertyId })
         );
 
         if (favoritesLink != null)
@@ -275,11 +289,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Back to list link
         var listLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetProperties",
-            controller: "Properties"
+            controller: "Properties",
+            values: BuildVersionedRouteValues(httpContext, new { })
         );
 
         if (listLink != null)
@@ -303,12 +317,11 @@ public class HateoasHelper : IHateoasHelper
         if (httpContext == null)
             return links;
 
-        // Self link - get user favorites
         var selfLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetUserFavorites",
             controller: "Favorites",
-            values: new { userId }
+            values: BuildVersionedRouteValues(httpContext, new { userId })
         );
 
         if (selfLink != null)
@@ -321,12 +334,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Remove favorite link
         var removeLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "RemoveFavorite",
             controller: "Favorites",
-            values: new { propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { propertyId })
         );
 
         if (removeLink != null)
@@ -339,12 +351,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Get property link
         var propertyLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetPropertyById",
             controller: "Properties",
-            values: new { id = propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { id = propertyId })
         );
 
         if (propertyLink != null)
@@ -368,12 +379,11 @@ public class HateoasHelper : IHateoasHelper
         if (httpContext == null)
             return links;
 
-        // Self link
         var selfLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetReviewById",
             controller: "Reviews",
-            values: new { id = reviewId }
+            values: BuildVersionedRouteValues(httpContext, new { id = reviewId })
         );
 
         if (selfLink != null)
@@ -386,12 +396,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Update link
         var updateLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "UpdateReview",
             controller: "Reviews",
-            values: new { id = reviewId }
+            values: BuildVersionedRouteValues(httpContext, new { id = reviewId })
         );
 
         if (updateLink != null)
@@ -404,12 +413,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Delete link
         var deleteLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "DeleteReview",
             controller: "Reviews",
-            values: new { id = reviewId }
+            values: BuildVersionedRouteValues(httpContext, new { id = reviewId })
         );
 
         if (deleteLink != null)
@@ -422,12 +430,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Property link
         var propertyLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetPropertyById",
             controller: "Properties",
-            values: new { id = propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { id = propertyId })
         );
 
         if (propertyLink != null)
@@ -440,12 +447,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Property reviews link
         var propertyReviewsLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetPropertyReviews",
             controller: "Reviews",
-            values: new { propertyId }
+            values: BuildVersionedRouteValues(httpContext, new { propertyId })
         );
 
         if (propertyReviewsLink != null)
@@ -469,12 +475,11 @@ public class HateoasHelper : IHateoasHelper
         if (httpContext == null)
             return links;
 
-        // Self link
         var selfLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetConversationById",
             controller: "Conversations",
-            values: new { id = conversationId }
+            values: BuildVersionedRouteValues(httpContext, new { id = conversationId })
         );
 
         if (selfLink != null)
@@ -487,12 +492,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Get messages link
         var messagesLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetConversationMessages",
             controller: "Messages",
-            values: new { conversationId }
+            values: BuildVersionedRouteValues(httpContext, new { conversationId })
         );
 
         if (messagesLink != null)
@@ -505,12 +509,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Send message link
         var sendMessageLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "SendMessage",
             controller: "Messages",
-            values: new { conversationId }
+            values: BuildVersionedRouteValues(httpContext, new { conversationId })
         );
 
         if (sendMessageLink != null)
@@ -523,12 +526,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Update conversation link
         var updateLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "UpdateConversation",
             controller: "Conversations",
-            values: new { id = conversationId }
+            values: BuildVersionedRouteValues(httpContext, new { id = conversationId })
         );
 
         if (updateLink != null)
@@ -552,12 +554,11 @@ public class HateoasHelper : IHateoasHelper
         if (httpContext == null)
             return links;
 
-        // Self link
         var selfLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetMessageById",
             controller: "Messages",
-            values: new { id = messageId }
+            values: BuildVersionedRouteValues(httpContext, new { id = messageId })
         );
 
         if (selfLink != null)
@@ -570,12 +571,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Update link
         var updateLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "UpdateMessage",
             controller: "Messages",
-            values: new { id = messageId }
+            values: BuildVersionedRouteValues(httpContext, new { id = messageId })
         );
 
         if (updateLink != null)
@@ -588,12 +588,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Delete link
         var deleteLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "DeleteMessage",
             controller: "Messages",
-            values: new { id = messageId }
+            values: BuildVersionedRouteValues(httpContext, new { id = messageId })
         );
 
         if (deleteLink != null)
@@ -606,12 +605,11 @@ public class HateoasHelper : IHateoasHelper
             });
         }
 
-        // Conversation link
         var conversationLink = _linkGenerator.GetPathByAction(
             httpContext,
             action: "GetConversationById",
             controller: "Conversations",
-            values: new { id = conversationId }
+            values: BuildVersionedRouteValues(httpContext, new { id = conversationId })
         );
 
         if (conversationLink != null)

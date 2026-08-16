@@ -1,6 +1,7 @@
 using Scalar.AspNetCore;
 using System.Text;
 using System.Threading.RateLimiting;
+using Asp.Versioning;
 using AutoMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,20 @@ builder.Services.AddControllers(options =>
 });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+
+// Add API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -152,7 +167,7 @@ builder.Services.AddRateLimiter(options =>
             Title = "Rate limit exceeded",
             Detail = $"Too many requests. Retry after {retryAfter} seconds.",
             Status = StatusCodes.Status429TooManyRequests,
-            Type = "https://tms.local/errors/rate_limit_exceeded"
+            Type = "https://tms.local/errors/rate_limit_exceeded"//
         }, ct);
     };
 
