@@ -10,6 +10,8 @@ using RealEstateMarketplace.Application.Interfaces.Services;
 using RealEstateMarketplace.Application.Properties.Commands;
 using RealEstateMarketplace.Application.Properties.Queries;
 using Scalar.AspNetCore;
+using RealEstateMarketplace.Infrastructure.Services;
+using Microsoft.AspNetCore.Http;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
@@ -27,19 +29,22 @@ public class PropertiesController : ControllerBase
     private readonly ICachedPropertyService _cachedPropertyService;
     private readonly IPropertyService _propertyService;
     private readonly IHateoasHelper _hateoasHelper;
+    private readonly ICloudinaryService _cloudinaryService;
 
     public PropertiesController(
         ISender sender,
         IMapper mapper,
         ICachedPropertyService cachedPropertyService,
         IPropertyService propertyService,
-        IHateoasHelper hateoasHelper)
+        IHateoasHelper hateoasHelper,
+        ICloudinaryService cloudinaryService)
     {
         _sender = sender;
         _mapper = mapper;
         _cachedPropertyService = cachedPropertyService;
         _propertyService = propertyService;
         _hateoasHelper = hateoasHelper;
+        _cloudinaryService = cloudinaryService;
     }
 
     [HttpGet]
@@ -120,14 +125,50 @@ public class PropertiesController : ControllerBase
 
     [HttpPost]
     [AllowAnonymous]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(PropertyDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [EndpointSummary("Create a property")]
-    [EndpointDescription("Creates a new property record.")]
-    public async Task<ActionResult<PropertyDto>> Create([FromBody] CreatePropertyDto request, CancellationToken cancellationToken)
+    [EndpointDescription("Creates a new property record with optional images.")]
+    public async Task<ActionResult<PropertyDto>> Create(
+        [FromForm] CreatePropertyDto request,
+        CancellationToken cancellationToken)
     {
-        var result = await _sender.Send(new CreatePropertyCommand
+        if (request.Images is null || request.Images.Count == 0)
+        {
+            return BadRequest("At least one property image is required.");
+        }
+
+        var imageUrls = new List<string>();
+
+        try
+        {
+            foreach (var image in request.Images)
+{
+    if (image is null || image.Length == 0)
+        return BadRequest("Image file cannot be empty.");
+
+    var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+
+    if (!allowedTypes.Contains(image.ContentType.ToLowerInvariant()))
+        return BadRequest("Only JPEG, PNG, and WebP images are allowed.");
+
+    var uploadResult = await _cloudinaryService.UploadImageAsync(image);
+    imageUrls.Add(uploadResult.ImageUrl);
+}
+        }
+        catch (Exception ex)
+        {
+            return BadRequest($"Image upload failed: {ex.Message}");
+        }
+
+        if (imageUrls.Count == 0)
+        {
+            return BadRequest("At least one valid property image is required.");
+        }
+
+        var commandResult = await _sender.Send(new CreatePropertyCommand
         {
             Title = request.Title,
             Description = request.Description,
@@ -140,18 +181,29 @@ public class PropertiesController : ControllerBase
             Rooms = request.Rooms,
             Area = request.Area,
             Status = request.Status,
-            OwnerId = request.OwnerId
+            OwnerId = request.OwnerId,
+            ImageUrls = imageUrls
         }, cancellationToken);
 
-        if (!result.IsSuccess)
+        if (!commandResult.IsSuccess)
         {
-            return result.Error!.Code == "owner_not_found"
-                ? NotFound(result.Error.Message)
-                : BadRequest(result.Error.Message);
+            return commandResult.Error!.Code == "owner_not_found"
+                ? NotFound(commandResult.Error.Message)
+                : BadRequest(commandResult.Error.Message);
         }
 
-        await _cachedPropertyService.InvalidatePropertyCacheAsync(null, cancellationToken);
-        return CreatedAtAction(nameof(GetPropertyById), new { id = result.Value!.Id }, result.Value);
+        await _cachedPropertyService.InvalidatePropertyCacheAsync(
+            null,
+            cancellationToken);
+
+      
+var propertyDto = _mapper.Map<PropertyDto>(commandResult.Value);
+
+return CreatedAtAction(
+    nameof(GetPropertyById),
+    new { id = commandResult.Value.Id },
+    propertyDto);
+
     }
 
     [HttpPut("{id:int}")]

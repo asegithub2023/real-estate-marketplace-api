@@ -9,13 +9,16 @@ public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropert
 {
     private readonly IPropertyRepository _propertyRepository;
     private readonly IUserRepository _userRepository;
-
+    private readonly IPropertyImageRepository _propertyImageRepository;
+    
     public CreatePropertyCommandHandler(
         IPropertyRepository propertyRepository,
-        IUserRepository userRepository)
+        IUserRepository userRepository,
+        IPropertyImageRepository propertyImageRepository)
     {
         _propertyRepository = propertyRepository;
         _userRepository = userRepository;
+        _propertyImageRepository = propertyImageRepository;
     }
 
     public async Task<Result<Property, PropertyError>> Handle(CreatePropertyCommand request, CancellationToken cancellationToken)
@@ -43,6 +46,15 @@ public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropert
         };
 
         await _propertyRepository.AddAsync(property, cancellationToken);
+        foreach (var imageUrl in request.ImageUrls)
+        {
+            var propertyImage = new PropertyImage
+            {
+                PropertyId = property.Id,
+                ImageUrl = imageUrl
+            };
+            await _propertyImageRepository.AddAsync(propertyImage, cancellationToken);
+        }
         return Result.Success<Property, PropertyError>(property);
     }
 }

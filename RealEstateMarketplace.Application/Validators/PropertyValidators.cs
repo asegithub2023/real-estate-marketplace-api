@@ -41,6 +41,19 @@ public class CreatePropertyValidator : AbstractValidator<CreatePropertyDto>
 
         RuleFor(x => x.OwnerId)
             .GreaterThan(0).WithMessage("Owner ID must be greater than 0.");
+
+       RuleFor(x => x.Images)
+    .NotEmpty()
+    .WithMessage("At least one image is required.");
+
+RuleForEach(x => x.Images)
+    .Must(file => file is not null && file.Length > 0)
+    .WithMessage("Image file cannot be empty.")
+    .Must(file =>
+        file.ContentType == "image/jpeg" ||
+        file.ContentType == "image/png" ||
+        file.ContentType == "image/webp")
+    .WithMessage("Only JPEG, PNG, and WebP images are allowed.");
     }
 }
 

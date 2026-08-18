@@ -19,6 +19,7 @@ using RealEstateMarketplace.Api.Security;
 using RealEstateMarketplace.Application.Reviews.Commands;
 using RealEstateMarketplace.Infrastructure;
 using RealEstateMarketplace.Infrastructure.Persistence;
+using RealEstateMarketplace.Infrastructure.Services;
 
 //using Polly;
 //using Polly.CircuitBreaker;
@@ -188,17 +189,12 @@ builder.Services.AddHybridCache(options =>
     };
 });
 
+
+
 // Add HATEOAS support
 builder.Services.AddScoped<IHateoasHelper, HateoasHelper>();
 builder.Services.AddHttpContextAccessor();
-
-
-
-
-
-
-
-
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 
 

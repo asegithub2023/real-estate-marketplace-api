@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 using RealEstateMarketplace.Domain.Enums;
 
 namespace RealEstateMarketplace.Application.DTOs;
@@ -36,6 +38,10 @@ public class CreatePropertyDto
     public double Area { get; set; }
     public PropertyStatus Status { get; set; }
     public int OwnerId { get; set; }
+
+    [Required(ErrorMessage = "At least one image is required.")]
+    [MinLength(1, ErrorMessage = "At least one image is required.")]
+    public List<IFormFile> Images { get; set; } = [];
 }
 
 public class UpdatePropertyDto

@@ -18,4 +18,5 @@ public sealed class CreatePropertyCommand : IRequest<Result<Property, PropertyEr
     public double Area { get; set; }
     public RealEstateMarketplace.Domain.Enums.PropertyStatus Status { get; set; }
     public int OwnerId { get; set; }
+    public List<string> ImageUrls { get; set; } = [];
 }
