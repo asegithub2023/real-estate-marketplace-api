@@ -1,12 +1,11 @@
+using Microsoft.AspNetCore.Identity;
 using RealEstateMarketplace.Domain.Enums;
 
-public class User
+namespace RealEstateMarketplace.Domain.Entities;
+
+public class User : IdentityUser<int>
 {
-    public int Id { get; set; }
-    public required string FullName { get; set; }
-    public required string Email { get; set; }
-    public required string PasswordHash { get; set; }
-    public required string PhoneNumber { get; set; }
+    public string FullName { get; set; } = string.Empty;
 
     public Role Role { get; set; }
 
@@ -17,8 +16,6 @@ public class User
     public ICollection<Report> Reports { get; set; } = [];
     public ICollection<Message> SentMessages { get; set; } = [];
     public ICollection<Conversation> Conversations { get; set; } = [];
-  
 }
-
 
 

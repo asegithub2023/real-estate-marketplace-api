@@ -20,6 +20,8 @@ using RealEstateMarketplace.Application.Reviews.Commands;
 using RealEstateMarketplace.Infrastructure;
 using RealEstateMarketplace.Infrastructure.Persistence;
 using RealEstateMarketplace.Infrastructure.Services;
+using Microsoft.AspNetCore.Identity;
+using RealEstateMarketplace.Domain.Entities;
 
 //using Polly;
 //using Polly.CircuitBreaker;
@@ -59,6 +61,23 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services
+    .AddIdentityCore<User>(options =>
+    {
+        // Password policy
+        options.Password.RequiredLength = 12;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireDigit = true;
+        options.Password.RequireNonAlphanumeric = true;
+
+        // Lockout policy
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.DefaultLockoutTimeSpan =
+            TimeSpan.FromMinutes(15);
+        options.Lockout.AllowedForNewUsers = true;
+    })
+    .AddRoles<IdentityRole<int>>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("postgresql");
