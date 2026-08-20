@@ -1,6 +1,5 @@
 using RealEstateMarketplace.Domain.Entities;
 using RealEstateMarketplace.Domain.Enums;
-
 public class Property
 {
     public int Id { get; set; }

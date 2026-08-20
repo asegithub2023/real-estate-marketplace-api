@@ -1,5 +1,4 @@
 namespace RealEstateMarketplace.Domain.Entities;
-
 public class PropertyFeature
 {
     public int Id { get; set; }

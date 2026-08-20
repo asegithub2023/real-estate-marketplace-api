@@ -1,3 +1,4 @@
+namespace RealEstateMarketplace.Domain.Entities;
 public class Conversation
 {
     public int Id { get; set; }

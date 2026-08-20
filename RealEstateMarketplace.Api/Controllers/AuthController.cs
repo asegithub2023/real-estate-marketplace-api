@@ -12,6 +12,9 @@ namespace RealEstateMarketplace.Api.Controllers;
 [Route("api/v{version:apiVersion}/[controller]")]
 [Tags("Auth")]
 [Produces("application/json")]
+[ProducesResponseType(
+    typeof(ProblemDetails),
+    StatusCodes.Status500InternalServerError)]
 [ApiVersion("1.0")]
 [AllowAnonymous]
 public class AuthController : ControllerBase
@@ -39,23 +42,35 @@ public class AuthController : ControllerBase
             },
             cancellationToken);
 
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
+       if (result.IsSuccess)
+{
+    return Ok(result.Value);
+}
 
-        if (result.Error!.Code == "invalid_credentials")
-        {
-            return Unauthorized(new
-            {
-                message = result.Error.Message
-            });
-        }
-
-        return BadRequest(new
+if (result.Error!.Code == "account_locked")
+{
+    return StatusCode(
+        StatusCodes.Status423Locked,
+        new
         {
             message = result.Error.Message
         });
+}
+
+if (result.Error.Code == "invalid_credentials")
+{
+    return Unauthorized(
+        new
+        {
+            message = result.Error.Message
+        });
+}
+
+return BadRequest(
+    new
+    {
+        message = result.Error.Message
+    });
     }
 
     [HttpPost("register")]
@@ -75,14 +90,15 @@ public class AuthController : ControllerBase
             },
             cancellationToken);
 
-        if (result.IsSuccess)
-        {
-            return Ok(result.Value);
-        }
+       if (result.IsSuccess)
+{
+    return Ok(result.Value);
+}
 
-        return BadRequest(new
-        {
-            message = result.Error!.Message
-        });
+return BadRequest(
+    new
+    {
+        message = result.Error!.Message
+    });
     }
 }
