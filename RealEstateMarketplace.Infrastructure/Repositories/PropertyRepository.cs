@@ -48,57 +48,87 @@ public class PropertyRepository : IPropertyRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<Property> Items, int TotalCount)> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
+   public async Task<(IReadOnlyList<Property> Items, int TotalCount)> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
+{
+    var query = _context.Properties.AsNoTracking();
+
+    // Search: title, description, address, or city
+    if (!string.IsNullOrWhiteSpace(request.Search))
     {
-        var query = _context.Properties.AsNoTracking();
-
-        // Apply search filter
-        if (!string.IsNullOrWhiteSpace(request.Search))
-        {
-            var searchTerm = request.Search.Trim();
-            query = query.Where(x => 
-                EF.Functions.ILike(x.Title, $"%{searchTerm}%") || 
-                EF.Functions.ILike(x.Description, $"%{searchTerm}%"));
-        }
-
-        // Get total count before pagination
-        var totalCount = await query.CountAsync(cancellationToken);
-
-        // Apply ordering
-        query = ApplyOrdering(query, request.OrderBy, request.Descending);
-
-        // Apply pagination
-        var items = await query
-            .Include(x => x.Owner)
-            .Include(x => x.Images)
-            .Include(x => x.PropertyFeatures)
-            .Skip((request.Page - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToListAsync(cancellationToken);
-
-        return (items, totalCount);
+        var searchTerm = request.Search.Trim();
+        query = query.Where(x =>
+            EF.Functions.ILike(x.Title, $"%{searchTerm}%") ||
+            EF.Functions.ILike(x.Description, $"%{searchTerm}%") ||
+            EF.Functions.ILike(x.Address, $"%{searchTerm}%") ||
+            EF.Functions.ILike(x.City, $"%{searchTerm}%"));
     }
 
-    private static IQueryable<Property> ApplyOrdering(IQueryable<Property> query, string? orderBy, bool descending)
-    {
-        var order = orderBy?.ToLower().Trim() ?? "id";
+    // Filters
+    if (request.MinPrice.HasValue)
+        query = query.Where(x => x.Price >= request.MinPrice.Value);
 
-        return (order, descending) switch
-        {
-            ("title", true) => query.OrderByDescending(x => x.Title),
-            ("title", false) => query.OrderBy(x => x.Title),
-            ("price", true) => query.OrderByDescending(x => x.Price),
-            ("price", false) => query.OrderBy(x => x.Price),
-            ("city", true) => query.OrderByDescending(x => x.City),
-            ("city", false) => query.OrderBy(x => x.City),
-            ("area", true) => query.OrderByDescending(x => x.Area),
-            ("area", false) => query.OrderBy(x => x.Area),
-            ("bedrooms", true) => query.OrderByDescending(x => x.Bedrooms),
-            ("bedrooms", false) => query.OrderBy(x => x.Bedrooms),
-            (_, true) => query.OrderByDescending(x => x.Id),
-            (_, false) => query.OrderBy(x => x.Id),
-        };
-    }
+    if (request.MaxPrice.HasValue)
+        query = query.Where(x => x.Price <= request.MaxPrice.Value);
+
+    if (request.MinBedrooms.HasValue)
+        query = query.Where(x => x.Bedrooms >= request.MinBedrooms.Value);
+
+    if (request.MinBathrooms.HasValue)
+        query = query.Where(x => x.Bathrooms >= request.MinBathrooms.Value);
+
+    if (!string.IsNullOrWhiteSpace(request.City))
+        query = query.Where(x => EF.Functions.ILike(x.City, $"%{request.City.Trim()}%"));
+
+    // Get total count before pagination
+    var totalCount = await query.CountAsync(cancellationToken);
+
+    // Apply sorting
+    query = ApplySorting(query, request);
+
+    // Apply pagination
+    var items = await query
+        .Include(x => x.Owner)
+        .Include(x => x.Images)
+        .Include(x => x.PropertyFeatures)
+        .Skip((request.Page - 1) * request.PageSize)
+        .Take(request.PageSize)
+        .ToListAsync(cancellationToken);
+
+    return (items, totalCount);
+}
+
+   private static IQueryable<Property> ApplySorting(IQueryable<Property> query, PagedRequest request)
+{
+    return request.SortBy?.ToLower().Trim() switch
+    {
+        "newest" => query.OrderByDescending(x => x.Id),
+        "priceasc" => query.OrderBy(x => x.Price),
+        "pricedesc" => query.OrderByDescending(x => x.Price),
+        "trending" => query.OrderByDescending(x => x.Favorites.Count),
+        _ => ApplyOrdering(query, request.OrderBy, request.Descending)
+    };
+}
+
+private static IQueryable<Property> ApplyOrdering(IQueryable<Property> query, string? orderBy, bool descending)
+{
+    var order = orderBy?.ToLower().Trim() ?? "id";
+
+    return (order, descending) switch
+    {
+        ("title", true) => query.OrderByDescending(x => x.Title),
+        ("title", false) => query.OrderBy(x => x.Title),
+        ("price", true) => query.OrderByDescending(x => x.Price),
+        ("price", false) => query.OrderBy(x => x.Price),
+        ("city", true) => query.OrderByDescending(x => x.City),
+        ("city", false) => query.OrderBy(x => x.City),
+        ("area", true) => query.OrderByDescending(x => x.Area),
+        ("area", false) => query.OrderBy(x => x.Area),
+        ("bedrooms", true) => query.OrderByDescending(x => x.Bedrooms),
+        ("bedrooms", false) => query.OrderBy(x => x.Bedrooms),
+        (_, true) => query.OrderByDescending(x => x.Id),
+        (_, false) => query.OrderBy(x => x.Id),
+    };
+}
 
     public async Task AddAsync(Property property, CancellationToken cancellationToken = default)
     {

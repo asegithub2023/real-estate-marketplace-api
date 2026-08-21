@@ -22,6 +22,7 @@ using RealEstateMarketplace.Infrastructure.Persistence;
 using RealEstateMarketplace.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using RealEstateMarketplace.Domain.Entities;
+using RealEstateMarketplace.Application.Interfaces.Services;
 
 //using Polly;
 //using Polly.CircuitBreaker;
@@ -91,22 +92,30 @@ builder.Services.AddAutoMapper(
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var key = jwtSettings["Key"] ?? "default-development-secret-key-change-me";
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
-        };
+        var jwt = builder.Configuration.GetSection("Jwt");
+
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+
+                ValidIssuer = jwt["Issuer"],
+                ValidAudience = jwt["Audience"],
+
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(
+                            jwt["Key"]
+                            ?? throw new InvalidOperationException(
+                                "JWT key is not configured.")))
+            };
     });
 
 builder.Services.AddAuthorization(options =>
@@ -210,11 +219,10 @@ builder.Services.AddHybridCache(options =>
 
 
 
-// Add HATEOAS support
 builder.Services.AddScoped<IHateoasHelper, HateoasHelper>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
-
+builder.Services.AddScoped<ITokenService, TokenService>();
 
 
 

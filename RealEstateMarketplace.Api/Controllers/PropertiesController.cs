@@ -80,12 +80,9 @@ public class PropertiesController : ControllerBase
                 HasPrevious = result.HasPrevious
             },
             Links = _hateoasHelper.GeneratePropertyListLinks(
-                result.Page,
-                result.TotalPages,
-                result.PageSize,
-                request.Search,
-                request.OrderBy,
-                request.Descending)
+    result.Page,
+    result.TotalPages,
+    request)
         };
 
         return Ok(response);

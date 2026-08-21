@@ -21,6 +21,15 @@ public class PagedRequest
     public string? Search { get; set; }
     public string OrderBy { get; set; } = "id";
     public bool Descending { get; set; } = true;
+    // New: filtering
+    public decimal? MinPrice { get; set; }
+    public decimal? MaxPrice { get; set; }
+    public int? MinBedrooms { get; set; }
+    public int? MinBathrooms { get; set; }
+    public string? City { get; set; }
+
+    // New: sorting
+    public string? SortBy { get; set; }
 }
 
 public class PagedResponse<T>

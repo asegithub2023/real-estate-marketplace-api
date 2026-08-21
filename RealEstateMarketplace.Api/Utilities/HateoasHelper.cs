@@ -13,7 +13,8 @@ public interface IHateoasHelper
     /// <summary>
     /// Generate links for a list of properties
     /// </summary>
-    List<LinkDto> GeneratePropertyListLinks(int currentPage, int totalPages, int pageSize, string? search = null, string? orderBy = null, bool descending = false);
+    // after
+List<LinkDto> GeneratePropertyListLinks(int currentPage, int totalPages, PagedRequest request);
 
     /// <summary>
     /// Generate links for a single property resource
@@ -74,127 +75,76 @@ public class HateoasHelper : IHateoasHelper
         return values;
     }
 
-    public List<LinkDto> GeneratePropertyListLinks(int currentPage, int totalPages, int pageSize, string? search = null, string? orderBy = null, bool descending = false)
+   public List<LinkDto> GeneratePropertyListLinks(int currentPage, int totalPages, PagedRequest request)
+{
+    var links = new List<LinkDto>();
+    var httpContext = _httpContextAccessor.HttpContext;
+
+    if (httpContext == null)
+        return links;
+
+    object RouteValuesFor(int page) => BuildVersionedRouteValues(httpContext, new
     {
-        var links = new List<LinkDto>();
-        var httpContext = _httpContextAccessor.HttpContext;
+        page,
+        pageSize = request.PageSize,
+        search = request.Search,
+        orderBy = request.OrderBy,
+        descending = request.Descending,
+        minPrice = request.MinPrice,
+        maxPrice = request.MaxPrice,
+        minBedrooms = request.MinBedrooms,
+        minBathrooms = request.MinBathrooms,
+        city = request.City,
+        sortBy = request.SortBy
+    });
 
-        if (httpContext == null)
-            return links;
+    var selfLink = _linkGenerator.GetPathByAction(
+        httpContext, action: "GetProperties", controller: "Properties", values: RouteValuesFor(currentPage));
 
-        var selfLink = _linkGenerator.GetPathByAction(
-            httpContext,
-            action: "GetProperties",
-            controller: "Properties",
-            values: BuildVersionedRouteValues(httpContext, new { page = currentPage, pageSize, search, orderBy, descending })
-        );
+    if (selfLink != null)
+        links.Add(new LinkDto { Href = selfLink, Rel = "self", Method = "GET" });
 
-        if (selfLink != null)
-        {
-            links.Add(new LinkDto
-            {
-                Href = selfLink,
-                Rel = "self",
-                Method = "GET"
-            });
-        }
+    var firstLink = _linkGenerator.GetPathByAction(
+        httpContext, action: "GetProperties", controller: "Properties", values: RouteValuesFor(1));
 
-        var firstLink = _linkGenerator.GetPathByAction(
-            httpContext,
-            action: "GetProperties",
-            controller: "Properties",
-            values: BuildVersionedRouteValues(httpContext, new { page = 1, pageSize, search, orderBy, descending })
-        );
+    if (firstLink != null)
+        links.Add(new LinkDto { Href = firstLink, Rel = "first", Method = "GET" });
 
-        if (firstLink != null)
-        {
-            links.Add(new LinkDto
-            {
-                Href = firstLink,
-                Rel = "first",
-                Method = "GET"
-            });
-        }
+    if (totalPages > 0)
+    {
+        var lastLink = _linkGenerator.GetPathByAction(
+            httpContext, action: "GetProperties", controller: "Properties", values: RouteValuesFor(totalPages));
 
-        if (totalPages > 0)
-        {
-            var lastLink = _linkGenerator.GetPathByAction(
-                httpContext,
-                action: "GetProperties",
-                controller: "Properties",
-                values: BuildVersionedRouteValues(httpContext, new { page = totalPages, pageSize, search, orderBy, descending })
-            );
-
-            if (lastLink != null)
-            {
-                links.Add(new LinkDto
-                {
-                    Href = lastLink,
-                    Rel = "last",
-                    Method = "GET"
-                });
-            }
-        }
-
-        if (currentPage > 1)
-        {
-            var prevLink = _linkGenerator.GetPathByAction(
-                httpContext,
-                action: "GetProperties",
-                controller: "Properties",
-                values: BuildVersionedRouteValues(httpContext, new { page = currentPage - 1, pageSize, search, orderBy, descending })
-            );
-
-            if (prevLink != null)
-            {
-                links.Add(new LinkDto
-                {
-                    Href = prevLink,
-                    Rel = "previous",
-                    Method = "GET"
-                });
-            }
-        }
-
-        if (currentPage < totalPages)
-        {
-            var nextLink = _linkGenerator.GetPathByAction(
-                httpContext,
-                action: "GetProperties",
-                controller: "Properties",
-                values: BuildVersionedRouteValues(httpContext, new { page = currentPage + 1, pageSize, search, orderBy, descending })
-            );
-
-            if (nextLink != null)
-            {
-                links.Add(new LinkDto
-                {
-                    Href = nextLink,
-                    Rel = "next",
-                    Method = "GET"
-                });
-            }
-        }
-
-        var createLink = _linkGenerator.GetPathByAction(
-            httpContext,
-            action: "CreateProperty",
-            controller: "Properties",
-            values: BuildVersionedRouteValues(httpContext, new { })
-        );
-
-        if (createLink != null)
-        {
-            links.Add(new LinkDto
-            {
-                Href = createLink,
-                Rel = "create-property",
-                Method = "POST"
-            });
-        }
-
-        return links.Where(l => l.Href != null).ToList();
+        if (lastLink != null)
+            links.Add(new LinkDto { Href = lastLink, Rel = "last", Method = "GET" });
     }
+
+    if (currentPage > 1)
+    {
+        var prevLink = _linkGenerator.GetPathByAction(
+            httpContext, action: "GetProperties", controller: "Properties", values: RouteValuesFor(currentPage - 1));
+
+        if (prevLink != null)
+            links.Add(new LinkDto { Href = prevLink, Rel = "previous", Method = "GET" });
+    }
+
+    if (currentPage < totalPages)
+    {
+        var nextLink = _linkGenerator.GetPathByAction(
+            httpContext, action: "GetProperties", controller: "Properties", values: RouteValuesFor(currentPage + 1));
+
+        if (nextLink != null)
+            links.Add(new LinkDto { Href = nextLink, Rel = "next", Method = "GET" });
+    }
+
+    var createLink = _linkGenerator.GetPathByAction(
+        httpContext, action: "CreateProperty", controller: "Properties", values: BuildVersionedRouteValues(httpContext, new { }));
+
+    if (createLink != null)
+        links.Add(new LinkDto { Href = createLink, Rel = "create-property", Method = "POST" });
+
+    return links.Where(l => l.Href != null).ToList();
+}
 
     public List<LinkDto> GeneratePropertyResourceLinks(int propertyId)
     {
