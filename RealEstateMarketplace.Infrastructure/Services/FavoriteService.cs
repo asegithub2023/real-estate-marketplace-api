@@ -25,30 +25,39 @@ public class FavoriteService : IFavoriteService
         return favorites.Select(favorite => favorite.ToDto()).ToList();
     }
 
-    public async Task<FavoriteDto?> AddAsync(CreateFavoriteDto request, CancellationToken cancellationToken = default)
+    public async Task<FavoriteDto?> AddAsync(
+    int userId,
+    int propertyId,
+    CancellationToken cancellationToken = default)
+{
+    var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+    var property = await _propertyRepository.GetByIdAsync(propertyId, cancellationToken);
+
+    if (user is null || property is null)
     {
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
-        var property = await _propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
-        if (user is null || property is null)
-        {
-            throw new InvalidOperationException("User or property was not found.");
-        }
-
-        var existingFavorite = await _favoriteRepository.GetByUserAndPropertyAsync(request.UserId, request.PropertyId, cancellationToken);
-        if (existingFavorite is not null)
-        {
-            return existingFavorite.ToDto();
-        }
-
-        var favorite = new Favorite
-        {
-            UserId = request.UserId,
-            PropertyId = request.PropertyId
-        };
-
-        await _favoriteRepository.AddAsync(favorite, cancellationToken);
-        return favorite.ToDto();
+        throw new InvalidOperationException("User or property was not found.");
     }
+
+    var existingFavorite = await _favoriteRepository.GetByUserAndPropertyAsync(
+        userId,
+        propertyId,
+        cancellationToken);
+
+    if (existingFavorite is not null)
+    {
+        return existingFavorite.ToDto();
+    }
+
+    var favorite = new Favorite
+    {
+        UserId = userId,
+        PropertyId = propertyId
+    };
+
+    await _favoriteRepository.AddAsync(favorite, cancellationToken);
+
+    return favorite.ToDto();
+}
 
     public async Task<bool> RemoveAsync(int userId, int propertyId, CancellationToken cancellationToken = default)
     {

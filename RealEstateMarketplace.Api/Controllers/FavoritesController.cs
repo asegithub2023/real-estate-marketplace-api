@@ -3,12 +3,12 @@ using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 using RealEstateMarketplace.Api.Utilities;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Favorites.Commands;
 using RealEstateMarketplace.Application.Favorites.Queries;
-using Scalar.AspNetCore;
-
+using System.Security.Claims;
 namespace RealEstateMarketplace.Api.Controllers;
 
 [ApiController]
@@ -31,14 +31,33 @@ public class FavoritesController : ControllerBase
         _hateoasHelper = hateoasHelper;
     }
 
-    [HttpGet("user/{userId:int}")]
+    // =========================================================
+    // Resolve the current user strictly from the JWT.
+    // The API's JwtBearer handler uses the default inbound claim
+    // mapping (Program.cs does not set MapInboundClaims = false),
+    // so the "sub" claim TokenService issues arrives here already
+    // remapped to ClaimTypes.NameIdentifier. Angular never supplies
+    // this value - it is never read from the route, query, or body.
+    // =========================================================
+   private bool TryGetCurrentUserId(out int userId)
+{
+    var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    return int.TryParse(value, out userId);
+}
+    
+    [HttpGet("me")]
     [ProducesResponseType(typeof(List<HateoasResponse<FavoriteDto>>), StatusCodes.Status200OK)]
-    [EndpointSummary("Get favorites for a user")]
-    [EndpointDescription("Returns the list of favorite properties for the specified user with HATEOAS links.")]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [EndpointSummary("Get favorites for the current user")]
+    [EndpointDescription("Returns the list of favorite properties for the authenticated user with HATEOAS links.")]
     public async Task<ActionResult<List<HateoasResponse<FavoriteDto>>>> GetUserFavorites(
-        int userId,
         CancellationToken cancellationToken)
     {
+        if (!TryGetCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
         var favorites = await _sender.Send(
             new GetUserFavoritesQuery { UserId = userId },
             cancellationToken);
@@ -53,17 +72,27 @@ public class FavoritesController : ControllerBase
         return Ok(response);
     }
 
-    [HttpPost]
+    [HttpPost("{propertyId:int}")]
     [ProducesResponseType(typeof(HateoasResponse<FavoriteDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [EndpointSummary("Add a favorite property")]
     [EndpointDescription("Creates a new favorite entry for the authenticated user with HATEOAS links.")]
     public async Task<ActionResult<HateoasResponse<FavoriteDto>>> AddFavorite(
-        [FromBody] CreateFavoriteDto request,
+        int propertyId,
         CancellationToken cancellationToken)
     {
-        var command = _mapper.Map<AddFavoriteCommand>(request);
+        if (!TryGetCurrentUserId(out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var command = new AddFavoriteCommand
+        {
+            UserId = userId,
+            PropertyId = propertyId
+        };
 
         var result = await _sender.Send(command, cancellationToken);
 
@@ -83,22 +112,20 @@ public class FavoritesController : ControllerBase
 
         return CreatedAtAction(
             nameof(GetUserFavorites),
-            new { userId = result.Value!.UserId },
             response);
     }
 
     [HttpDelete("{propertyId:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [EndpointSummary("Remove a favorite property")]
     [EndpointDescription("Deletes the favorite entry for the authenticated user and specified property.")]
     public async Task<ActionResult> RemoveFavorite(
         int propertyId,
         CancellationToken cancellationToken)
     {
-        // Get user ID from claims (assuming it's stored in token)
-        var userIdClaim = User.FindFirst("sub") ?? User.FindFirst("nameid");
-        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+        if (!TryGetCurrentUserId(out var userId))
         {
             return Unauthorized();
         }

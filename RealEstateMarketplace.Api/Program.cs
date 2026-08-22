@@ -116,7 +116,24 @@ builder.Services
                             ?? throw new InvalidOperationException(
                                 "JWT key is not configured.")))
             };
+
+            options.Events = new JwtBearerEvents
+{
+    OnAuthenticationFailed = context =>
+    {
+        Console.WriteLine("🔥 JWT AUTH FAILED:");
+        Console.WriteLine(context.Exception.Message);
+        return Task.CompletedTask;
+    },
+    OnTokenValidated = context =>
+    {
+        Console.WriteLine("✅ JWT TOKEN VALIDATED");
+        return Task.CompletedTask;
+    }
+};
     });
+
+
 
 builder.Services.AddAuthorization(options =>
 {

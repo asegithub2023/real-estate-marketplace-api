@@ -5,7 +5,8 @@ using RealEstateMarketplace.Domain.Entities;
 
 namespace RealEstateMarketplace.Application.Favorites.Commands;
 
-public sealed class AddFavoriteCommandHandler : IRequestHandler<AddFavoriteCommand, Result<Favorite, FavoriteError>>
+public sealed class AddFavoriteCommandHandler
+    : IRequestHandler<AddFavoriteCommand, Result<Favorite, FavoriteError>>
 {
     private readonly IFavoriteRepository _favoriteRepository;
     private readonly IUserRepository _userRepository;
@@ -21,30 +22,52 @@ public sealed class AddFavoriteCommandHandler : IRequestHandler<AddFavoriteComma
         _propertyRepository = propertyRepository;
     }
 
-    public async Task<Result<Favorite, FavoriteError>> Handle(AddFavoriteCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Favorite, FavoriteError>> Handle(
+        AddFavoriteCommand request,
+        CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
-        var property = await _propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
+        // Make sure the user exists
+        var user = await _userRepository.GetByIdAsync(
+            request.UserId,
+            cancellationToken);
+
+        // Make sure the property exists
+        var property = await _propertyRepository.GetByIdAsync(
+            request.PropertyId,
+            cancellationToken);
 
         if (user is null || property is null)
         {
-            return Result.Failure<Favorite, FavoriteError>(FavoriteError.UserOrPropertyNotFound());
+            return Result.Failure<Favorite, FavoriteError>(
+                FavoriteError.UserOrPropertyNotFound());
         }
 
-        var existingFavorite = await _favoriteRepository.GetByUserAndPropertyAsync(request.UserId, request.PropertyId, cancellationToken);
+        // Check whether the favorite already exists
+        var existingFavorite =
+            await _favoriteRepository.GetByUserAndPropertyAsync(
+                request.UserId,
+                request.PropertyId,
+                cancellationToken);
+
         if (existingFavorite is not null)
         {
-            return Result.Success<Favorite, FavoriteError>(existingFavorite);
+            return Result.Success<Favorite, FavoriteError>(
+                existingFavorite);
         }
 
+        // Only set the foreign keys.
+        // Do NOT set User or Property navigation properties.
         var favorite = new Favorite
         {
             UserId = request.UserId,
             PropertyId = request.PropertyId
         };
 
-        await _favoriteRepository.AddAsync(favorite, cancellationToken);
+        await _favoriteRepository.AddAsync(
+            favorite,
+            cancellationToken);
 
-        return Result.Success<Favorite, FavoriteError>(favorite);
+        return Result.Success<Favorite, FavoriteError>(
+            favorite);
     }
 }

@@ -25,6 +25,8 @@ public class FavoriteRepository : IFavoriteRepository
     {
         return await _context.Favorites
             .AsNoTracking()
+            .Include(x => x.Property)
+                .ThenInclude(p => p.Images)
             .Where(x => x.UserId == userId)
             .OrderByDescending(x => x.Id)
             .ToListAsync(cancellationToken);
