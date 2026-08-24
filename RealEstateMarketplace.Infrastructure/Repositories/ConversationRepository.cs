@@ -14,15 +14,24 @@ public class ConversationRepository : IConversationRepository
         _context = context;
     }
 
+    // Loaded with the navs the API DTO needs (property + images, both users, and
+    // every message ordered oldest-first - needed both for the last-message preview
+    // and for computing the per-viewer unread count).
+    private IQueryable<Conversation> Enriched() => _context.Conversations
+        .AsNoTracking()
+        .Include(c => c.Property).ThenInclude(p => p.Images)
+        .Include(c => c.Buyer)
+        .Include(c => c.Owner)
+        .Include(c => c.Messages.OrderBy(m => m.SentAt));
+
     public async Task<Conversation?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        return await _context.Conversations.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return await Enriched().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Conversation>> GetByUserIdAsync(int userId, CancellationToken cancellationToken = default)
     {
-        return await _context.Conversations
-            .AsNoTracking()
+        return await Enriched()
             .Where(x => x.BuyerId == userId || x.OwnerId == userId)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -43,7 +52,13 @@ public class ConversationRepository : IConversationRepository
 
     public async Task UpdateAsync(Conversation conversation, CancellationToken cancellationToken = default)
     {
-        _context.Conversations.Update(conversation);
+        // GetByIdAsync now returns the conversation with its Property/Buyer/Owner/Messages
+        // graph loaded. Using DbSet.Update() here would cascade-attach that whole graph as
+        // Modified and needlessly (and, for the Identity User rows, riskily) rewrite it.
+        // Attach + explicitly marking only the root as Modified keeps the write scoped to
+        // the conversation's own columns.
+        _context.Attach(conversation);
+        _context.Entry(conversation).State = EntityState.Modified;
         await _context.SaveChangesAsync(cancellationToken);
     }
 

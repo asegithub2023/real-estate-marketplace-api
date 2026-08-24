@@ -9,12 +9,6 @@ public class CreateConversationValidator : AbstractValidator<CreateConversationD
     {
         RuleFor(x => x.PropertyId)
             .GreaterThan(0).WithMessage("Property ID must be greater than 0.");
-
-        RuleFor(x => x.BuyerId)
-            .GreaterThan(0).WithMessage("Buyer ID must be greater than 0.");
-
-        RuleFor(x => x.OwnerId)
-            .GreaterThan(0).WithMessage("Owner ID must be greater than 0.");
     }
 }
 

@@ -18,6 +18,7 @@ public class MessageRepository : IMessageRepository
     {
         return await _context.Messages
             .AsNoTracking()
+            .Include(x => x.Sender)
             .Where(x => x.ConversationId == conversationId)
             .OrderBy(x => x.SentAt)
             .ToListAsync(cancellationToken);
@@ -44,5 +45,12 @@ public class MessageRepository : IMessageRepository
     {
         _context.Messages.Remove(message);
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public Task<int> MarkAsReadAsync(int conversationId, int readerUserId, CancellationToken cancellationToken = default)
+    {
+        return _context.Messages
+            .Where(m => m.ConversationId == conversationId && m.SenderId != readerUserId && !m.IsRead)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(m => m.IsRead, true), cancellationToken);
     }
 }
