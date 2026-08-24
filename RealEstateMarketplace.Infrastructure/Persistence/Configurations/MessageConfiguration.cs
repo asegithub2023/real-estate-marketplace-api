@@ -17,6 +17,9 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
         builder.Property(m => m.SentAt)
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+        builder.Property(m => m.IsRead)
+            .HasDefaultValue(false);
+
         builder.HasOne(m => m.Conversation)
             .WithMany(c => c.Messages)
             .HasForeignKey(m => m.ConversationId)

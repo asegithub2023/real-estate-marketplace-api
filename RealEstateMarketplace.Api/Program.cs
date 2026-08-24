@@ -23,6 +23,8 @@ using RealEstateMarketplace.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using RealEstateMarketplace.Domain.Entities;
 using RealEstateMarketplace.Application.Interfaces.Services;
+using Microsoft.AspNetCore.SignalR;
+using RealEstateMarketplace.Api.Hubs;
 
 //using Polly;
 //using Polly.CircuitBreaker;
@@ -84,6 +86,7 @@ builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("postgresql");
 
 builder.Services.AddApplicationServices();
+builder.Services.AddSignalR();
 builder.Services.AddMediatR(typeof(RealEstateMarketplace.Application.Reviews.Commands.CreateReviewCommand));
 builder.Services.AddAutoMapper(
     typeof(RealEstateMarketplace.Api.Mapping.FavoritesProfile),
@@ -128,6 +131,22 @@ builder.Services
     OnTokenValidated = context =>
     {
         Console.WriteLine("✅ JWT TOKEN VALIDATED");
+        return Task.CompletedTask;
+    },
+    // SignalR's browser client can't set an Authorization header on a WebSocket
+    // upgrade request, so it sends the token as ?access_token=... instead. Only
+    // honor that for the hub path - every other endpoint still requires a real
+    // Authorization header.
+    OnMessageReceived = context =>
+    {
+        var accessToken = context.Request.Query["access_token"];
+        var path = context.HttpContext.Request.Path;
+
+        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/chat"))
+        {
+            context.Token = accessToken;
+        }
+
         return Task.CompletedTask;
     }
 };
@@ -266,6 +285,7 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 app.MapHealthChecks("/health");
 
 app.Run();

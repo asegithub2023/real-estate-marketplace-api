@@ -63,11 +63,39 @@ public static class DtoMappingExtensions
         CreatedAt = conversation.CreatedAt
     };
 
+    // Enriched projection used by the API - needs the current user's id to work out
+    // which side of the conversation is "the other person".
+    public static ConversationDto ToDto(this Conversation conversation, int currentUserId)
+    {
+        var isBuyer = conversation.BuyerId == currentUserId;
+        var otherUser = isBuyer ? conversation.Owner : conversation.Buyer;
+        var lastMessage = conversation.Messages?
+            .OrderByDescending(m => m.SentAt)
+            .FirstOrDefault();
+
+        return new ConversationDto
+        {
+            Id = conversation.Id,
+            PropertyId = conversation.PropertyId,
+            PropertyTitle = conversation.Property?.Title ?? string.Empty,
+            PropertyImageUrl = conversation.Property?.Images?.FirstOrDefault()?.ImageUrl,
+            BuyerId = conversation.BuyerId,
+            OwnerId = conversation.OwnerId,
+            OtherUserId = otherUser?.Id ?? 0,
+            OtherUserName = otherUser?.FullName ?? string.Empty,
+            CreatedAt = conversation.CreatedAt,
+            LastMessageContent = lastMessage?.Content,
+            LastMessageAt = lastMessage?.SentAt,
+            UnreadCount = conversation.Messages?.Count(m => m.SenderId != currentUserId && !m.IsRead) ?? 0
+        };
+    }
+
     public static MessageDto ToDto(this Message message) => new()
     {
         Id = message.Id,
         ConversationId = message.ConversationId,
         SenderId = message.SenderId,
+        SenderName = message.Sender?.FullName ?? string.Empty,
         Content = message.Content,
         SentAt = message.SentAt
     };
