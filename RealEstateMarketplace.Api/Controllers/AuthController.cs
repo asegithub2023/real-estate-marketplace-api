@@ -10,6 +10,7 @@ using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Services;
 using RealEstateMarketplace.Domain.Entities;
 using RealEstateMarketplace.Infrastructure.Persistence;
+using RealEstateMarketplace.Api.Security;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
@@ -270,5 +271,33 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             accessToken = newAccessToken,
             refreshToken = newRefreshToken.Token
         });
+    }
+
+    // =========================================================
+    // ADMIN: LIST USERS
+    // =========================================================
+
+    [HttpGet("users")]
+    [Authorize(Policy = Policies.AdminOnly)]
+    [ProducesResponseType(
+        typeof(IReadOnlyList<UserSummaryDto>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<IReadOnlyList<UserSummaryDto>>> GetUsers(
+        CancellationToken cancellationToken)
+    {
+        var users = await _context.Users
+            .OrderByDescending(u => u.Id)
+            .Select(u => new UserSummaryDto
+            {
+                Id = u.Id,
+                FullName = u.FullName,
+                Email = u.Email ?? string.Empty,
+                Role = u.Role.ToString()
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(users);
     }
 }

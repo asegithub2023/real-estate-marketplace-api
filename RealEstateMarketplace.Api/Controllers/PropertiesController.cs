@@ -12,6 +12,7 @@ using RealEstateMarketplace.Application.Properties.Queries;
 using Scalar.AspNetCore;
 using RealEstateMarketplace.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
@@ -206,10 +207,26 @@ return CreatedAtAction(
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(PropertyDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [EndpointSummary("Update a property")]
-    [EndpointDescription("Updates an existing property by ID.")]
+    [EndpointDescription("Updates an existing property by ID. Only the property's owner or an admin may update it.")]
     public async Task<ActionResult<PropertyDto>> Update(int id, [FromBody] UpdatePropertyDto request, CancellationToken cancellationToken)
     {
+        var existing = await _cachedPropertyService.GetPropertyAsync(id, cancellationToken);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isOwner = int.TryParse(currentUserId, out var userId) && existing.OwnerId == userId;
+        var isAdmin = User.IsInRole("Admin");
+
+        if (!isOwner && !isAdmin)
+        {
+            return Forbid();
+        }
+
         var result = await _sender.Send(new UpdatePropertyCommand
         {
             Id = id,
