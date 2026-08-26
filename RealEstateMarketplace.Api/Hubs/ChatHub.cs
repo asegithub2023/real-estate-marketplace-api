@@ -5,10 +5,6 @@ using RealEstateMarketplace.Application.Interfaces.Repositories;
 
 namespace RealEstateMarketplace.Api.Hubs;
 
-/// Realtime channel for the conversation/message feature. All persistence still goes
-/// through the REST endpoints (ConversationsController/MessageController) - this hub
-/// only broadcasts what already happened and manages which connections receive which
-/// broadcasts. It never creates or modifies data itself.
 [Authorize]
 public class ChatHub : Hub
 {
@@ -19,14 +15,10 @@ public class ChatHub : Hub
         _conversationRepository = conversationRepository;
     }
 
-    // Every authenticated user's connection(s) auto-join this group so the API can
-    // push "ConversationUpdated" events (new last message, unread count) to them
-    // regardless of which conversation - if any - they currently have open.
+   
     public static string UserGroup(int userId) => $"user-{userId}";
 
-    // One group per conversation. Only participants are added to it (see
-    // JoinConversation below), so a broadcast to this group can never reach someone
-    // who isn't the buyer or owner on that conversation.
+
     public static string ConversationGroup(int conversationId) => $"conversation-{conversationId}";
 
     private bool TryGetCurrentUserId(out int userId)
@@ -45,10 +37,7 @@ public class ChatHub : Hub
         await base.OnConnectedAsync();
     }
 
-    // Called by the client right after it opens a conversation. Re-checks
-    // participation against the DB (same rule as ConversationsController/
-    // MessageController) so a connection can only ever be added to the realtime
-    // group for a conversation it's actually allowed to read.
+ 
     public async Task JoinConversation(int conversationId)
     {
         if (!TryGetCurrentUserId(out var userId))
@@ -66,8 +55,7 @@ public class ChatHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, ConversationGroup(conversationId));
     }
 
-    // Called by the client when it navigates away from a conversation (or picks a
-    // different one), so this connection stops receiving that thread's broadcasts.
+   
     public Task LeaveConversation(int conversationId)
     {
         return Groups.RemoveFromGroupAsync(Context.ConnectionId, ConversationGroup(conversationId));
