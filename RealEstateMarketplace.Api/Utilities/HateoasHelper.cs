@@ -83,7 +83,7 @@ public class HateoasHelper : IHateoasHelper
     if (httpContext == null)
         return links;
 
-    object RouteValuesFor(int page) => BuildVersionedRouteValues(httpContext, new
+       object RouteValuesFor(int page) => BuildVersionedRouteValues(httpContext, new
     {
         page,
         pageSize = request.PageSize,
@@ -95,6 +95,8 @@ public class HateoasHelper : IHateoasHelper
         minBedrooms = request.MinBedrooms,
         minBathrooms = request.MinBathrooms,
         city = request.City,
+        propertyType = request.PropertyType,
+        listingType = request.ListingType,
         sortBy = request.SortBy
     });
 

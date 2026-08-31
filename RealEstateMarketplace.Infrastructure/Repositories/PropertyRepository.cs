@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
 using RealEstateMarketplace.Domain.Entities;
+using RealEstateMarketplace.Domain.Enums;
 using RealEstateMarketplace.Infrastructure.Persistence;
 
 namespace RealEstateMarketplace.Infrastructure.Repositories;
@@ -52,15 +53,21 @@ public class PropertyRepository : IPropertyRepository
 {
     var query = _context.Properties.AsNoTracking();
 
-    // Search: title, description, address, or city
+    // Search: title, description, address, city, or a matching Property Type name
+    // (e.g. searching "Villa" or "Apartment" returns properties of that type).
     if (!string.IsNullOrWhiteSpace(request.Search))
     {
         var searchTerm = request.Search.Trim();
+        var matchedPropertyType = Enum.TryParse<PropertyType>(searchTerm, true, out var parsedType)
+            ? parsedType
+            : (PropertyType?)null;
+
         query = query.Where(x =>
             EF.Functions.ILike(x.Title, $"%{searchTerm}%") ||
             EF.Functions.ILike(x.Description, $"%{searchTerm}%") ||
             EF.Functions.ILike(x.Address, $"%{searchTerm}%") ||
-            EF.Functions.ILike(x.City, $"%{searchTerm}%"));
+            EF.Functions.ILike(x.City, $"%{searchTerm}%") ||
+            (matchedPropertyType != null && x.PropertyType == matchedPropertyType));
     }
 
     // Filters
@@ -78,6 +85,12 @@ public class PropertyRepository : IPropertyRepository
 
     if (!string.IsNullOrWhiteSpace(request.City))
         query = query.Where(x => EF.Functions.ILike(x.City, $"%{request.City.Trim()}%"));
+
+    if (request.PropertyType.HasValue)
+        query = query.Where(x => x.PropertyType == request.PropertyType.Value);
+
+    if (request.ListingType.HasValue)
+        query = query.Where(x => x.ListingType == request.ListingType.Value);
 
     // Get total count before pagination
     var totalCount = await query.CountAsync(cancellationToken);

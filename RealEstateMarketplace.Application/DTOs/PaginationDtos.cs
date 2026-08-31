@@ -1,5 +1,7 @@
 namespace RealEstateMarketplace.Application.DTOs;
 
+using RealEstateMarketplace.Domain.Enums;
+
 public class PagedRequest
 {
     private int _page = 1;
@@ -27,6 +29,10 @@ public class PagedRequest
     public int? MinBedrooms { get; set; }
     public int? MinBathrooms { get; set; }
     public string? City { get; set; }
+
+    // New: property type / listing type filters
+    public PropertyType? PropertyType { get; set; }
+    public ListingType? ListingType { get; set; }
 
     // New: sorting
     public string? SortBy { get; set; }
