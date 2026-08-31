@@ -1,12 +1,12 @@
-using AutoMapper;
 using Asp.Versioning;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using RealEstateMarketplace.Api.Security;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Reports.Commands;
 using RealEstateMarketplace.Application.Reports.Queries;
-using Scalar.AspNetCore;
+using System.Security.Claims;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
@@ -20,12 +20,21 @@ namespace RealEstateMarketplace.Api.Controllers;
 public class ReportsController : ControllerBase
 {
     private readonly ISender _sender;
-    private readonly IMapper _mapper;
 
-    public ReportsController(ISender sender, IMapper mapper)
+    public ReportsController(ISender sender)
     {
         _sender = sender;
-        _mapper = mapper;
+    }
+
+    [HttpGet]
+    [Authorize(Policy = Policies.AdminOnly)]
+    [ProducesResponseType(typeof(IReadOnlyList<ReportDto>), StatusCodes.Status200OK)]
+    [EndpointSummary("Get all reports")]
+    [EndpointDescription("Returns every report on the platform. Admin only.")]
+    public async Task<ActionResult<IReadOnlyList<ReportDto>>> GetAll(CancellationToken cancellationToken)
+    {
+        var reports = await _sender.Send(new GetAllReportsQuery(), cancellationToken);
+        return Ok(reports);
     }
 
     [HttpGet("property/{propertyId:int}")]
@@ -35,7 +44,7 @@ public class ReportsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ReportDto>>> GetByPropertyId(int propertyId, CancellationToken cancellationToken)
     {
         var reports = await _sender.Send(new GetReportsByPropertyIdQuery { PropertyId = propertyId }, cancellationToken);
-        return Ok(_mapper.Map<IReadOnlyList<ReportDto>>(reports));
+        return Ok(reports);
     }
 
     [HttpGet("{id:int}")]
@@ -46,20 +55,26 @@ public class ReportsController : ControllerBase
     public async Task<ActionResult<ReportDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var report = await _sender.Send(new GetReportByIdQuery { Id = id }, cancellationToken);
-        return report is null ? NotFound() : Ok(_mapper.Map<ReportDto>(report));
+        return report is null ? NotFound() : Ok(report);
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(ReportDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [EndpointSummary("Create a report")]
-    [EndpointDescription("Creates a new report for a property.")]
+    [EndpointDescription("Creates a new report for a property, filed by the current logged-in user.")]
     public async Task<ActionResult<ReportDto>> Create([FromBody] CreateReportDto request, CancellationToken cancellationToken)
     {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(currentUserId, out var userId))
+        {
+            return Unauthorized();
+        }
+
         var report = await _sender.Send(new CreateReportCommand
         {
             Reason = request.Reason,
-            UserId = request.UserId,
+            UserId = userId,
             PropertyId = request.PropertyId
         }, cancellationToken);
 
@@ -70,7 +85,7 @@ public class ReportsController : ControllerBase
     [ProducesResponseType(typeof(ReportDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [EndpointSummary("Update a report")]
-    [EndpointDescription("Updates an existing report by ID.")]
+    [EndpointDescription("Updates an existing report's reason by ID.")]
     public async Task<ActionResult<ReportDto>> Update(int id, [FromBody] UpdateReportDto request, CancellationToken cancellationToken)
     {
         var report = await _sender.Send(new UpdateReportCommand
@@ -79,14 +94,32 @@ public class ReportsController : ControllerBase
             Reason = request.Reason
         }, cancellationToken);
 
-        return report is null ? NotFound() : Ok(_mapper.Map<ReportDto>(report));
+        return report is null ? NotFound() : Ok(report);
+    }
+
+    [HttpPatch("{id:int}/status")]
+    [Authorize(Policy = Policies.AdminOnly)]
+    [ProducesResponseType(typeof(ReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [EndpointSummary("Update a report's status")]
+    [EndpointDescription("Marks a report as Reviewed or Dismissed. Admin only.")]
+    public async Task<ActionResult<ReportDto>> UpdateStatus(int id, [FromBody] UpdateReportStatusDto request, CancellationToken cancellationToken)
+    {
+        var report = await _sender.Send(new ResolveReportCommand
+        {
+            Id = id,
+            Status = request.Status
+        }, cancellationToken);
+
+        return report is null ? NotFound() : Ok(report);
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = Policies.AdminOnly)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [EndpointSummary("Delete a report")]
-    [EndpointDescription("Deletes the specified report.")]
+    [EndpointDescription("Permanently deletes the specified report. Admin only.")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var deleted = await _sender.Send(new DeleteReportCommand { Id = id }, cancellationToken);

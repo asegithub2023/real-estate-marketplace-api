@@ -11,9 +11,6 @@ public class CreateReportValidator : AbstractValidator<CreateReportDto>
             .NotEmpty().WithMessage("Reason is required.")
             .MaximumLength(1000).WithMessage("Reason must not exceed 1000 characters.");
 
-        RuleFor(x => x.UserId)
-            .GreaterThan(0).WithMessage("User ID must be greater than 0.");
-
         RuleFor(x => x.PropertyId)
             .GreaterThan(0).WithMessage("Property ID must be greater than 0.");
     }

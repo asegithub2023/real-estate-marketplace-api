@@ -1,10 +1,11 @@
 using MediatR;
+using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
-using RealEstateMarketplace.Domain.Entities;
+using RealEstateMarketplace.Application.Mapping;
 
 namespace RealEstateMarketplace.Application.Reports.Queries;
 
-public sealed class GetReportByIdQueryHandler : IRequestHandler<GetReportByIdQuery, Report?>
+public sealed class GetReportByIdQueryHandler : IRequestHandler<GetReportByIdQuery, ReportDto?>
 {
     private readonly IReportRepository _reportRepository;
 
@@ -13,8 +14,9 @@ public sealed class GetReportByIdQueryHandler : IRequestHandler<GetReportByIdQue
         _reportRepository = reportRepository;
     }
 
-    public async Task<Report?> Handle(GetReportByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ReportDto?> Handle(GetReportByIdQuery request, CancellationToken cancellationToken)
     {
-        return await _reportRepository.GetByIdAsync(request.Id, cancellationToken);
+        var report = await _reportRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken);
+        return report?.ToDto();
     }
 }

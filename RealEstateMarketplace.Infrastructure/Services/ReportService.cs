@@ -21,7 +21,7 @@ public class ReportService : IReportService
 
     public async Task<ReportDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
-        var report = await _reportRepository.GetByIdAsync(id, cancellationToken);
+        var report = await _reportRepository.GetByIdWithDetailsAsync(id, cancellationToken);
         return report is null ? null : report.ToDto();
     }
 
@@ -31,9 +31,9 @@ public class ReportService : IReportService
         return reports.Select(report => report.ToDto()).ToList();
     }
 
-    public async Task<ReportDto> CreateAsync(CreateReportDto request, CancellationToken cancellationToken = default)
+    public async Task<ReportDto> CreateAsync(CreateReportDto request, int userId, CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
         var property = await _propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
         if (user is null || property is null)
         {
@@ -43,12 +43,14 @@ public class ReportService : IReportService
         var report = new Report
         {
             Reason = request.Reason,
-            UserId = request.UserId,
+            UserId = userId,
             PropertyId = request.PropertyId
         };
 
         await _reportRepository.AddAsync(report, cancellationToken);
-        return report.ToDto();
+
+        var created = await _reportRepository.GetByIdWithDetailsAsync(report.Id, cancellationToken);
+        return created!.ToDto();
     }
 
     public async Task<ReportDto?> UpdateAsync(int id, UpdateReportDto request, CancellationToken cancellationToken = default)
@@ -65,7 +67,9 @@ public class ReportService : IReportService
         }
 
         await _reportRepository.UpdateAsync(report, cancellationToken);
-        return report.ToDto();
+
+        var updated = await _reportRepository.GetByIdWithDetailsAsync(id, cancellationToken);
+        return updated?.ToDto();
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)

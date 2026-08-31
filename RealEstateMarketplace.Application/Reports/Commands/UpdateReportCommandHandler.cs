@@ -1,10 +1,11 @@
 using MediatR;
+using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
-using RealEstateMarketplace.Domain.Entities;
+using RealEstateMarketplace.Application.Mapping;
 
 namespace RealEstateMarketplace.Application.Reports.Commands;
 
-public sealed class UpdateReportCommandHandler : IRequestHandler<UpdateReportCommand, Report?>
+public sealed class UpdateReportCommandHandler : IRequestHandler<UpdateReportCommand, ReportDto?>
 {
     private readonly IReportRepository _reportRepository;
 
@@ -13,7 +14,7 @@ public sealed class UpdateReportCommandHandler : IRequestHandler<UpdateReportCom
         _reportRepository = reportRepository;
     }
 
-    public async Task<Report?> Handle(UpdateReportCommand request, CancellationToken cancellationToken)
+    public async Task<ReportDto?> Handle(UpdateReportCommand request, CancellationToken cancellationToken)
     {
         var report = await _reportRepository.GetByIdAsync(request.Id, cancellationToken);
         if (report is null)
@@ -28,6 +29,7 @@ public sealed class UpdateReportCommandHandler : IRequestHandler<UpdateReportCom
 
         await _reportRepository.UpdateAsync(report, cancellationToken);
 
-        return report;
+        var updated = await _reportRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken);
+        return updated?.ToDto();
     }
 }

@@ -34,6 +34,8 @@ public static class DtoMappingExtensions
         Rooms = property.Rooms,
         Area = property.Area,
         Status = property.Status,
+        PropertyType = property.PropertyType,
+        ListingType = property.ListingType,
         OwnerId = property.OwnerId,
         OwnerName = property.Owner?.FullName ?? string.Empty,
         Images = property.Images?.Select(image => image.ToDto()).ToList() ?? new List<PropertyImageDto>(),
@@ -113,8 +115,12 @@ public static class DtoMappingExtensions
     {
         Id = report.Id,
         Reason = report.Reason,
+        Status = report.Status,
+        CreatedAt = report.CreatedAt,
         UserId = report.UserId,
-        PropertyId = report.PropertyId
+        ReporterName = report.User?.FullName ?? string.Empty,
+        PropertyId = report.PropertyId,
+        PropertyTitle = report.Property?.Title ?? string.Empty
     };
 
     public static ReviewDto ToDto(this Review review) => new()

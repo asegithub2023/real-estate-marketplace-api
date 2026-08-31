@@ -19,11 +19,22 @@ public class ReportRepository : IReportRepository
         return await _context.Reports.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<Report?> GetByIdWithDetailsAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Reports
+            .AsNoTracking()
+            .Include(x => x.User)
+            .Include(x => x.Property)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Report>> GetByPropertyIdAsync(int propertyId, CancellationToken cancellationToken = default)
     {
         return await _context.Reports
             .AsNoTracking()
             .Where(x => x.PropertyId == propertyId)
+            .Include(x => x.User)
+            .Include(x => x.Property)
             .OrderByDescending(x => x.Id)
             .ToListAsync(cancellationToken);
     }
@@ -41,6 +52,8 @@ public class ReportRepository : IReportRepository
     {
         return await _context.Reports
             .AsNoTracking()
+            .Include(x => x.User)
+            .Include(x => x.Property)
             .OrderByDescending(x => x.Id)
             .ToListAsync(cancellationToken);
     }

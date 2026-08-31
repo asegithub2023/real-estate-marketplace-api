@@ -1,6 +1,7 @@
 using MediatR;
 using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Repositories;
+using RealEstateMarketplace.Application.Mapping;
 
 namespace RealEstateMarketplace.Application.Reports.Commands;
 
@@ -21,14 +22,10 @@ public sealed class ResolveReportCommandHandler : IRequestHandler<ResolveReportC
             return null;
         }
 
-        await _reportRepository.DeleteAsync(report, cancellationToken);
+        report.Status = request.Status;
+        await _reportRepository.UpdateAsync(report, cancellationToken);
 
-        return new ReportDto
-        {
-            Id = report.Id,
-            Reason = report.Reason,
-            UserId = report.UserId,
-            PropertyId = report.PropertyId
-        };
+        var updated = await _reportRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken);
+        return updated?.ToDto();
     }
 }

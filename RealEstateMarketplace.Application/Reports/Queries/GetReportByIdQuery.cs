@@ -1,9 +1,9 @@
 using MediatR;
-using RealEstateMarketplace.Domain.Entities;
+using RealEstateMarketplace.Application.DTOs;
 
 namespace RealEstateMarketplace.Application.Reports.Queries;
 
-public sealed class GetReportByIdQuery : IRequest<Report?>
+public sealed class GetReportByIdQuery : IRequest<ReportDto?>
 {
     public int Id { get; set; }
 }
