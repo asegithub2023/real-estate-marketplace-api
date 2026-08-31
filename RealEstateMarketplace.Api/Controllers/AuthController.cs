@@ -22,6 +22,7 @@ namespace RealEstateMarketplace.Api.Controllers;
     typeof(ProblemDetails),
     StatusCodes.Status500InternalServerError)]
 [ApiVersion("1.0")]
+[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly ISender _sender;
@@ -269,6 +270,60 @@ public async Task<ActionResult<AuthResponseDto>> Login(
         {
             accessToken = newAccessToken,
             refreshToken = newRefreshToken.Token
+        });
+    }
+
+    // =========================================================
+    // FORGOT PASSWORD
+    // =========================================================
+
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordDto request,
+        CancellationToken cancellationToken)
+    {
+        await _sender.Send(new ForgotPasswordCommand { Email = request.Email }, cancellationToken);
+
+        // Always 200, regardless of whether the email exists, to avoid leaking
+        // which emails are registered.
+        return Ok(new
+        {
+            message = "If an account exists with this email, password reset instructions have been sent."
+        });
+    }
+
+    // =========================================================
+    // RESET PASSWORD
+    // =========================================================
+
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new ResetPasswordCommand
+            {
+                Email = request.Email,
+                Token = request.Token,
+                NewPassword = request.NewPassword
+            },
+            cancellationToken);
+
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new
+            {
+                message = result.Error!.Message
+            });
+        }
+
+        return Ok(new
+        {
+            message = "Your password has been reset successfully."
         });
     }
 

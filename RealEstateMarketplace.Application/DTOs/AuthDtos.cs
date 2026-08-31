@@ -30,3 +30,15 @@ public class UserSummaryDto
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
 }
+
+public class ForgotPasswordDto
+{
+    public required string Email { get; set; }
+}
+
+public class ResetPasswordDto
+{
+    public required string Email { get; set; }
+    public required string Token { get; set; }
+    public required string NewPassword { get; set; }
+}

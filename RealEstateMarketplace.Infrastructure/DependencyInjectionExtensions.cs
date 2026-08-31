@@ -33,6 +33,7 @@ public static class DependencyInjectionExtensions
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IEmailService, SmtpEmailService>();
 
         return services;
     }
