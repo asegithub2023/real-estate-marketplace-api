@@ -18,6 +18,8 @@ public class PropertyDto
     public int Rooms { get; set; }
     public double Area { get; set; }
     public PropertyStatus Status { get; set; }
+    public PropertyType PropertyType { get; set; }
+    public ListingType ListingType { get; set; }
     public int OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
     public List<PropertyImageDto> Images { get; set; } = [];
@@ -36,11 +38,13 @@ public class CreatePropertyDto
     public int Bathrooms { get; set; }
     public int Rooms { get; set; }
     public double Area { get; set; }
-    public PropertyStatus Status { get; set; }
+    public PropertyType PropertyType { get; set; }
+    public ListingType ListingType { get; set; }
     public int OwnerId { get; set; }
 
     [Required(ErrorMessage = "At least one image is required.")]
     [MinLength(1, ErrorMessage = "At least one image is required.")]
+    [MaxLength(7, ErrorMessage = "You can upload a maximum of 7 images.")]
     public List<IFormFile> Images { get; set; } = [];
 }
 

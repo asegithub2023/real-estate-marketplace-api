@@ -42,9 +42,17 @@ public class CreatePropertyValidator : AbstractValidator<CreatePropertyDto>
         RuleFor(x => x.OwnerId)
             .GreaterThan(0).WithMessage("Owner ID must be greater than 0.");
 
+        RuleFor(x => x.PropertyType)
+            .IsInEnum().WithMessage("A valid property type is required.");
+
+        RuleFor(x => x.ListingType)
+            .IsInEnum().WithMessage("A valid listing type is required.");
+
        RuleFor(x => x.Images)
     .NotEmpty()
-    .WithMessage("At least one image is required.");
+    .WithMessage("At least one image is required.")
+    .Must(images => images.Count <= 7)
+    .WithMessage("You can upload a maximum of 7 images.");
 
 RuleForEach(x => x.Images)
     .Must(file => file is not null && file.Length > 0)

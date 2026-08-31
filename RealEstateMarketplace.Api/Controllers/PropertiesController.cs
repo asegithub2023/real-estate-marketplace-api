@@ -138,6 +138,11 @@ public class PropertiesController : ControllerBase
             return BadRequest("At least one property image is required.");
         }
 
+        if (request.Images.Count > 7)
+        {
+            return BadRequest("You can upload a maximum of 7 images.");
+        }
+
         var imageUrls = new List<string>();
 
         try
@@ -178,7 +183,8 @@ public class PropertiesController : ControllerBase
             Bathrooms = request.Bathrooms,
             Rooms = request.Rooms,
             Area = request.Area,
-            Status = request.Status,
+            PropertyType = request.PropertyType,
+            ListingType = request.ListingType,
             OwnerId = request.OwnerId,
             ImageUrls = imageUrls
         }, cancellationToken);
