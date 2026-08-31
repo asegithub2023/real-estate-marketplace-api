@@ -372,10 +372,22 @@ return CreatedAtAction(
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [EndpointSummary("Delete a property")]
-    [EndpointDescription("Deletes the specified property.")]
+    [EndpointDescription("Deletes the specified property. Only the property's owner or an admin may do this.")]
     public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
     {
+        var existing = await _cachedPropertyService.GetPropertyAsync(id, cancellationToken);
+        if (existing is null)
+        {
+            return NotFound();
+        }
+
+        if (!IsOwnerOrAdmin(existing.OwnerId))
+        {
+            return Forbid();
+        }
+
         var result = await _sender.Send(new DeletePropertyCommand { Id = id }, cancellationToken);
         if (!result.IsSuccess)
         {
