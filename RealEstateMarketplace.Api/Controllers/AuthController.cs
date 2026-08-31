@@ -10,7 +10,9 @@ using RealEstateMarketplace.Application.DTOs;
 using RealEstateMarketplace.Application.Interfaces.Services;
 using RealEstateMarketplace.Domain.Entities;
 using RealEstateMarketplace.Infrastructure.Persistence;
+using RealEstateMarketplace.Infrastructure.Services;
 using RealEstateMarketplace.Api.Security;
+using System.Security.Claims;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
@@ -22,24 +24,26 @@ namespace RealEstateMarketplace.Api.Controllers;
     typeof(ProblemDetails),
     StatusCodes.Status500InternalServerError)]
 [ApiVersion("1.0")]
-[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly ISender _sender;
     private readonly UserManager<User> _userManager;
     private readonly ApplicationDbContext _context;
     private readonly ITokenService _tokenService;
+    private readonly ICloudinaryService _cloudinaryService;
 
     public AuthController(
         ISender sender,
         UserManager<User> userManager,
         ApplicationDbContext context,
-        ITokenService tokenService)
+        ITokenService tokenService,
+        ICloudinaryService cloudinaryService)
     {
         _sender = sender;
         _userManager = userManager;
         _context = context;
         _tokenService = tokenService;
+        _cloudinaryService = cloudinaryService;
     }
 
     // =========================================================
@@ -47,6 +51,7 @@ public class AuthController : ControllerBase
     // =========================================================
 
     [HttpPost("login")]
+[AllowAnonymous]
 [ProducesResponseType(
     typeof(AuthResponseDto),
     StatusCodes.Status200OK)]
@@ -131,6 +136,7 @@ public async Task<ActionResult<AuthResponseDto>> Login(
     // =========================================================
 
     [HttpPost("register")]
+    [AllowAnonymous]
     [ProducesResponseType(
         typeof(AuthResponseDto),
         StatusCodes.Status200OK)]
@@ -168,6 +174,7 @@ public async Task<ActionResult<AuthResponseDto>> Login(
     public record RefreshRequest(string RefreshToken);
 
     [HttpPost("refresh")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(
@@ -278,6 +285,7 @@ public async Task<ActionResult<AuthResponseDto>> Login(
     // =========================================================
 
     [HttpPost("forgot-password")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ForgotPassword(
         [FromBody] ForgotPasswordDto request,
@@ -298,6 +306,7 @@ public async Task<ActionResult<AuthResponseDto>> Login(
     // =========================================================
 
     [HttpPost("reset-password")]
+    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword(
@@ -326,6 +335,115 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             message = "Your password has been reset successfully."
         });
     }
+
+    // =========================================================
+    // MY PROFILE
+    // =========================================================
+
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<UserProfileDto>> GetMyProfile(CancellationToken cancellationToken)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(ToProfileDto(user));
+    }
+
+    [HttpPut("me")]
+    [Authorize]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<UserProfileDto>> UpdateMyProfile(
+        [FromBody] UpdateProfileDto request,
+        CancellationToken cancellationToken)
+    {
+        var user = await GetCurrentUserAsync();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        if (!string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var existing = await _userManager.FindByEmailAsync(request.Email);
+            if (existing is not null && existing.Id != user.Id)
+            {
+                return BadRequest(new { message = "This email is already in use by another account." });
+            }
+
+            await _userManager.SetEmailAsync(user, request.Email);
+            await _userManager.SetUserNameAsync(user, request.Email);
+        }
+
+        user.FullName = request.FullName;
+        user.PhoneNumber = request.PhoneNumber;
+
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+        {
+            var message = string.Join(" ", result.Errors.Select(e => e.Description));
+            return BadRequest(new { message });
+        }
+
+        return Ok(ToProfileDto(user));
+    }
+
+    [HttpPost("me/photo")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<UserProfileDto>> UploadMyProfilePhoto(
+        IFormFile photo,
+        CancellationToken cancellationToken)
+    {
+        if (photo is null || photo.Length == 0)
+        {
+            return BadRequest(new { message = "A photo file is required." });
+        }
+
+        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(photo.ContentType.ToLowerInvariant()))
+        {
+            return BadRequest(new { message = "Only JPEG, PNG, and WebP images are allowed." });
+        }
+
+        var user = await GetCurrentUserAsync();
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        var uploadResult = await _cloudinaryService.UploadImageAsync(photo);
+        user.ProfileImageUrl = uploadResult.ImageUrl;
+
+        await _userManager.UpdateAsync(user);
+
+        return Ok(ToProfileDto(user));
+    }
+
+    private async Task<User?> GetCurrentUserAsync()
+    {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(currentUserId, out var userId)
+            ? await _userManager.FindByIdAsync(userId.ToString())
+            : null;
+    }
+
+    private static UserProfileDto ToProfileDto(User user) => new()
+    {
+        Id = user.Id,
+        FullName = user.FullName,
+        Email = user.Email ?? string.Empty,
+        PhoneNumber = user.PhoneNumber,
+        ProfileImageUrl = user.ProfileImageUrl,
+        Role = user.Role.ToString()
+    };
 
     // =========================================================
     // ADMIN: LIST USERS
