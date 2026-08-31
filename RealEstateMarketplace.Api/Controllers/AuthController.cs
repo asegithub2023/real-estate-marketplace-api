@@ -22,7 +22,6 @@ namespace RealEstateMarketplace.Api.Controllers;
     typeof(ProblemDetails),
     StatusCodes.Status500InternalServerError)]
 [ApiVersion("1.0")]
-[AllowAnonymous]
 public class AuthController : ControllerBase
 {
     private readonly ISender _sender;

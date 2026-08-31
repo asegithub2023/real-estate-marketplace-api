@@ -1,5 +1,7 @@
-using RealEstateMarketplace.Domain.Entities;
+namespace RealEstateMarketplace.Domain.Entities;
+
 using RealEstateMarketplace.Domain.Enums;
+
 public class Property
 {
     public int Id { get; set; }
@@ -19,6 +21,9 @@ public class Property
     public double Area { get; set; }
 
     public PropertyStatus Status { get; set; }
+
+    public PropertyType PropertyType { get; set; }
+    public ListingType ListingType { get; set; }
 
     public int OwnerId { get; set; }
     public User Owner { get; set; } = null!;
