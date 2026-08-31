@@ -80,7 +80,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.Lockout.AllowedForNewUsers = true;
     })
     .AddRoles<IdentityRole<int>>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("postgresql");
