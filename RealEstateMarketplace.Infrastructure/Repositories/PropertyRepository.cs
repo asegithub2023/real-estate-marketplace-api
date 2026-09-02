@@ -26,6 +26,12 @@ public class PropertyRepository : IPropertyRepository
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<Property?> GetTrackedByIdAsync(int id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Properties
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Properties
