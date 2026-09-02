@@ -258,7 +258,7 @@ return CreatedAtAction(
         }
 
         await _cachedPropertyService.InvalidatePropertyCacheAsync(id, cancellationToken);
-        return Ok(result.Value!);
+        return Ok(_mapper.Map<PropertyDto>(result.Value));
     }
 
     [HttpPost("{id:int}/images")]

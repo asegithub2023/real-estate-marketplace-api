@@ -244,9 +244,9 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             });
         }
 
-        // Get user's roles
-        var roles =
-            await _userManager.GetRolesAsync(user);
+        // Get user's role (the app's role model is User.Role, the enum -
+        // not Identity's own role tables; see LoginCommandHandler for why).
+        var roles = new List<string> { user.Role.ToString() };
 
         // Mark old refresh token as used
         storedToken.IsUsed = true;
