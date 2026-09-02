@@ -25,7 +25,7 @@ using RealEstateMarketplace.Domain.Entities;
 using RealEstateMarketplace.Application.Interfaces.Services;
 using Microsoft.AspNetCore.SignalR;
 using RealEstateMarketplace.Api.Hubs;
-
+using Microsoft.AspNetCore.DataProtection;
 //using Polly;
 //using Polly.CircuitBreaker;
 //using Polly.Retry;
@@ -64,24 +64,29 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-    builder.Services
-    .AddIdentityCore<User>(options =>
-    {
-        // Password policy
-        options.Password.RequiredLength = 12;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireDigit = true;
-        options.Password.RequireNonAlphanumeric = true;
 
-        // Lockout policy
-        options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.DefaultLockoutTimeSpan =
-            TimeSpan.FromMinutes(15);
-        options.Lockout.AllowedForNewUsers = true;
-    })
-    .AddRoles<IdentityRole<int>>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+builder.Services.AddDataProtection()
+    .SetApplicationName("RealEstateMarketplace")
+    .PersistKeysToFileSystem(
+        new DirectoryInfo(
+            Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys")));
+
+builder.Services.AddIdentityCore<User>(options =>
+{
+    // Password policy
+    options.Password.RequiredLength = 12;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireDigit = true;
+    options.Password.RequireNonAlphanumeric = true;
+
+    // Lockout policy
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+    options.Lockout.AllowedForNewUsers = true;
+})
+.AddRoles<IdentityRole<int>>()
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<ApplicationDbContext>("postgresql");

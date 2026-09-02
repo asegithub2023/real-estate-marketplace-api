@@ -63,7 +63,11 @@ public class SmtpEmailService : IEmailService
         using var client = new SmtpClient(host, port)
         {
             Credentials = new NetworkCredential(username, password),
-            EnableSsl = true
+            EnableSsl = true,
+            // Without an explicit timeout, a slow/unresponsive SMTP server can
+            // block the whole HTTP request indefinitely - fail fast instead so
+            // the caller gets a clear error rather than a request that never resolves.
+            Timeout = 15000
         };
 
         await client.SendMailAsync(message, cancellationToken);
