@@ -21,6 +21,7 @@ public class TokenService : ITokenService
         User user,
         IList<string> roles)
     {
+        // Claims are the authorization data consumed by API policies.
         var jwt = _configuration.GetSection("Jwt");
 
         var claims = new List<Claim>

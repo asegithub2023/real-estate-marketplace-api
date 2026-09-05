@@ -46,10 +46,6 @@ public class AuthController : ControllerBase
         _cloudinaryService = cloudinaryService;
     }
 
-    // =========================================================
-    // LOGIN
-    // =========================================================
-
     [HttpPost("login")]
 [AllowAnonymous]
 [ProducesResponseType(
@@ -101,7 +97,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             });
         }
 
-        // Create initial refresh token
         var refreshToken = new RefreshToken
         {
             Token = Guid.NewGuid().ToString("N"),
@@ -111,6 +106,7 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             IsRevoked = false
         };
 
+        // Store the refresh token for rotation and revocation.
         _context.RefreshTokens.Add(refreshToken);
 
         await _context.SaveChangesAsync(
@@ -121,7 +117,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             accessToken = result.Value!.Token,
             refreshToken = refreshToken.Token,
 
-            // Temporary compatibility with existing Angular
             token = result.Value.Token,
 
             userId = result.Value.UserId,
@@ -130,10 +125,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             role = result.Value.Role
         });
     }
-
-    // =========================================================
-    // REGISTER
-    // =========================================================
 
     [HttpPost("register")]
     [AllowAnonymous]
@@ -167,10 +158,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
         });
     }
 
-    // =========================================================
-    // REFRESH TOKEN
-    // =========================================================
-
     public record RefreshRequest(string RefreshToken);
 
     [HttpPost("refresh")]
@@ -187,7 +174,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
                     x => x.Token == request.RefreshToken,
                     cancellationToken);
 
-        // Token does not exist
         if (storedToken is null)
         {
             return Unauthorized(new
@@ -196,9 +182,9 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             });
         }
 
-        // Reusing an already-used token = token theft
         if (storedToken.IsUsed)
         {
+            // Revoke all sessions when a refresh token is reused.
             var userTokens =
                 await _context.RefreshTokens
                     .Where(x =>
@@ -220,7 +206,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             });
         }
 
-        // Expired or revoked
         if (storedToken.IsRevoked ||
             storedToken.ExpiresAt <= DateTime.UtcNow)
         {
@@ -231,7 +216,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             });
         }
 
-        // Find user
         var user =
             await _userManager.FindByIdAsync(
                 storedToken.UserId.ToString());
@@ -244,14 +228,11 @@ public async Task<ActionResult<AuthResponseDto>> Login(
             });
         }
 
-        // Get user's role (the app's role model is User.Role, the enum -
-        // not Identity's own role tables; see LoginCommandHandler for why).
         var roles = new List<string> { user.Role.ToString() };
 
-        // Mark old refresh token as used
         storedToken.IsUsed = true;
 
-        // Create new refresh token
+        // Rotate refresh tokens after each successful renewal.
         var newRefreshToken = new RefreshToken
         {
             Token = Guid.NewGuid().ToString("N"),
@@ -264,7 +245,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
         _context.RefreshTokens.Add(
             newRefreshToken);
 
-        // Generate new access token
         var newAccessToken =
             _tokenService.GenerateAccessToken(
                 user,
@@ -280,10 +260,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
         });
     }
 
-    // =========================================================
-    // FORGOT PASSWORD
-    // =========================================================
-
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -293,17 +269,11 @@ public async Task<ActionResult<AuthResponseDto>> Login(
     {
         await _sender.Send(new ForgotPasswordCommand { Email = request.Email }, cancellationToken);
 
-        // Always 200, regardless of whether the email exists, to avoid leaking
-        // which emails are registered.
         return Ok(new
         {
             message = "If an account exists with this email, password reset instructions have been sent."
         });
     }
-
-    // =========================================================
-    // RESET PASSWORD
-    // =========================================================
 
     [HttpPost("reset-password")]
     [AllowAnonymous]
@@ -336,15 +306,12 @@ public async Task<ActionResult<AuthResponseDto>> Login(
         });
     }
 
-    // =========================================================
-    // MY PROFILE
-    // =========================================================
-
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<UserProfileDto>> GetMyProfile(CancellationToken cancellationToken)
     {
+        // Resolve the user from the authenticated claim.
         var user = await GetCurrentUserAsync();
         if (user is null)
         {
@@ -444,10 +411,6 @@ public async Task<ActionResult<AuthResponseDto>> Login(
         ProfileImageUrl = user.ProfileImageUrl,
         Role = user.Role.ToString()
     };
-
-    // =========================================================
-    // ADMIN: LIST USERS
-    // =========================================================
 
     [HttpGet("users")]
     [Authorize(Policy = Policies.AdminOnly)]

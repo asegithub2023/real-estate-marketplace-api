@@ -146,6 +146,7 @@ public class PropertiesController : ControllerBase
             return BadRequest("You can upload a maximum of 7 images.");
         }
 
+        // Validate and upload images before creating the property record.
         var imageUrls = new List<string>();
 
         try
@@ -203,7 +204,6 @@ public class PropertiesController : ControllerBase
             null,
             cancellationToken);
 
-      
 var propertyDto = _mapper.Map<PropertyDto>(commandResult.Value);
 
 return CreatedAtAction(
@@ -231,6 +231,7 @@ return CreatedAtAction(
         var isOwner = int.TryParse(currentUserId, out var userId) && existing.OwnerId == userId;
         var isAdmin = User.IsInRole("Admin");
 
+        // Only the owner or an administrator may update a property.
         if (!isOwner && !isAdmin)
         {
             return Forbid();

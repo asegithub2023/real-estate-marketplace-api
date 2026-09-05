@@ -26,21 +26,10 @@ using RealEstateMarketplace.Application.Interfaces.Services;
 using Microsoft.AspNetCore.SignalR;
 using RealEstateMarketplace.Api.Hubs;
 using Microsoft.AspNetCore.DataProtection;
-//using Polly;
-//using Polly.CircuitBreaker;
-//using Polly.Retry;
-//using Polly.Timeout;
-
-//using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-//using Microsoft.Extensions.Diagnostics.HealthChecks;
-//using HealthChecks.NpgSql;
-//using OpenTelemetry.Instrumentation.Runtime;
-//using OpenTelemetry.Metrics;
-//using OpenTelemetry.Resources;
-//using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Apply request validation before handlers run.
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ValidationFilter>();
@@ -48,7 +37,6 @@ builder.Services.AddControllers(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
-// Add API Versioning
 builder.Services.AddApiVersioning(options =>
 {
     options.DefaultApiVersion = new ApiVersion(1, 0);
@@ -67,19 +55,19 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddDataProtection()
     .SetApplicationName("RealEstateMarketplace")
+    // Persist keys across application restarts.
     .PersistKeysToFileSystem(
         new DirectoryInfo(
             Path.Combine(builder.Environment.ContentRootPath, "DataProtection-Keys")));
 
 builder.Services.AddIdentityCore<User>(options =>
 {
-    // Password policy
+
     options.Password.RequiredLength = 12;
     options.Password.RequireUppercase = true;
     options.Password.RequireDigit = true;
     options.Password.RequireNonAlphanumeric = true;
 
-    // Lockout policy
     options.Lockout.MaxFailedAccessAttempts = 5;
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
     options.Lockout.AllowedForNewUsers = true;
@@ -105,6 +93,7 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Validate tokens before authorization evaluates claims.
         var jwt = builder.Configuration.GetSection("Jwt");
 
         options.TokenValidationParameters =
@@ -139,12 +128,10 @@ builder.Services
         Console.WriteLine("✅ JWT TOKEN VALIDATED");
         return Task.CompletedTask;
     },
-    // SignalR's browser client can't set an Authorization header on a WebSocket
-    // upgrade request, so it sends the token as ?access_token=... instead. Only
-    // honor that for the hub path - every other endpoint still requires a real
-    // Authorization header.
+
     OnMessageReceived = context =>
     {
+        // SignalR supplies the bearer token through the query string.
         var accessToken = context.Request.Query["access_token"];
         var path = context.HttpContext.Request.Path;
 
@@ -157,8 +144,6 @@ builder.Services
     }
 };
     });
-
-
 
 builder.Services.AddAuthorization(options =>
 {
@@ -178,11 +163,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-
-
-
 builder.Services.AddRateLimiter(options =>
 {
+    // Apply separate token buckets to each API-key tier.
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
     {
         var (partitionKey, tier) = ApiKeyResolver.Resolve(httpContext);
@@ -238,7 +221,7 @@ builder.Services.AddRateLimiter(options =>
             Title = "Rate limit exceeded",
             Detail = $"Too many requests. Retry after {retryAfter} seconds.",
             Status = StatusCodes.Status429TooManyRequests,
-            Type = "https://tms.local/errors/rate_limit_exceeded"//
+            Type = "https://RealEstate.local/errors/rate_limit_exceeded"
         }, ct);
     };
 
@@ -259,15 +242,10 @@ builder.Services.AddHybridCache(options =>
     };
 });
 
-
-
 builder.Services.AddScoped<IHateoasHelper, HateoasHelper>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
-
-
 
 var app = builder.Build();
 
@@ -276,7 +254,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi("/openapi/{documentName}.json");
     app.MapScalarApiReference("/scalar");
 }
-
 
 app.UseMiddleware<RequestLoggingMiddleware>();
 
@@ -288,6 +265,7 @@ app.UseExceptionHandler();
 app.UseRouting();
 app.UseCors("AllowAngularApp");
 app.UseRateLimiter();
+// Authenticate before evaluating authorization policies.
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

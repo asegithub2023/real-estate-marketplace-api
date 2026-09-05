@@ -4,41 +4,19 @@ using RealEstateMarketplace.Application.DTOs;
 
 namespace RealEstateMarketplace.Api.Utilities;
 
-/// <summary>
-/// Helper service for generating HATEOAS links in API responses.
-/// Provides consistent link generation patterns across all controllers.
-/// </summary>
 public interface IHateoasHelper
 {
-    /// <summary>
-    /// Generate links for a list of properties
-    /// </summary>
-    // after
+
 List<LinkDto> GeneratePropertyListLinks(int currentPage, int totalPages, PagedRequest request);
 
-    /// <summary>
-    /// Generate links for a single property resource
-    /// </summary>
     List<LinkDto> GeneratePropertyResourceLinks(int propertyId);
 
-    /// <summary>
-    /// Generate links for a single favorite resource
-    /// </summary>
     List<LinkDto> GenerateFavoriteResourceLinks(int propertyId, int userId);
 
-    /// <summary>
-    /// Generate links for a review resource
-    /// </summary>
     List<LinkDto> GenerateReviewResourceLinks(int reviewId, int propertyId);
 
-    /// <summary>
-    /// Generate links for a conversation resource
-    /// </summary>
     List<LinkDto> GenerateConversationResourceLinks(int conversationId);
 
-    /// <summary>
-    /// Generate links for a message resource
-    /// </summary>
     List<LinkDto> GenerateMessageResourceLinks(int messageId, int conversationId);
 }
 

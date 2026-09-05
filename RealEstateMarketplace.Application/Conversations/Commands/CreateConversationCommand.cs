@@ -8,7 +8,5 @@ public sealed class CreateConversationCommand : IRequest<Result<Conversation, Co
 {
     public int PropertyId { get; set; }
 
-    // Set by the controller from the authenticated user's JWT claim - never trust
-    // a client-supplied BuyerId.
     public int BuyerId { get; set; }
 }

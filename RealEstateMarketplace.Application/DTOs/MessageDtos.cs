@@ -12,8 +12,7 @@ public class MessageDto
 
 public class CreateMessageDto
 {
-    // SenderId is intentionally NOT here - the sender is always the authenticated
-    // user (from the JWT), never a value the client supplies.
+
     public int ConversationId { get; set; }
     public required string Content { get; set; }
 }

@@ -16,9 +16,7 @@ public sealed class UpdatePropertyCommandHandler : IRequestHandler<UpdatePropert
 
     public async Task<Result<Property, PropertyError>> Handle(UpdatePropertyCommand request, CancellationToken cancellationToken)
     {
-        // Tracked, no-Include fetch for the actual save - see GetTrackedByIdAsync's
-        // doc comment for why GetByIdAsync (AsNoTracking + Include graph) broke
-        // updates.
+
         var property = await _propertyRepository.GetTrackedByIdAsync(request.Id, cancellationToken);
         if (property is null)
         {
@@ -82,8 +80,6 @@ public sealed class UpdatePropertyCommandHandler : IRequestHandler<UpdatePropert
 
         await _propertyRepository.UpdateAsync(property, cancellationToken);
 
-        // Re-fetch with Owner/Images/PropertyFeatures loaded for the response -
-        // the tracked entity used for the save above has none of those loaded.
         var updated = await _propertyRepository.GetByIdAsync(request.Id, cancellationToken);
         return Result.Success<Property, PropertyError>(updated!);
     }

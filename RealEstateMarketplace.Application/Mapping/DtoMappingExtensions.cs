@@ -65,10 +65,9 @@ public static class DtoMappingExtensions
         CreatedAt = conversation.CreatedAt
     };
 
-    // Enriched projection used by the API - needs the current user's id to work out
-    // which side of the conversation is "the other person".
     public static ConversationDto ToDto(this Conversation conversation, int currentUserId)
     {
+        // Return the participant relative to the current user.
         var isBuyer = conversation.BuyerId == currentUserId;
         var otherUser = isBuyer ? conversation.Owner : conversation.Buyer;
         var lastMessage = conversation.Messages?

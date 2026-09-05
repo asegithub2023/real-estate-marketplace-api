@@ -19,6 +19,7 @@ public class RequestLoggingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // Correlate request start and completion logs.
         var correlationId =
             Guid.NewGuid().ToString("N")[..8];
 

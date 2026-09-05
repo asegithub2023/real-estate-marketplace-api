@@ -27,7 +27,6 @@ public sealed class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswor
     {
         var user = await _userManager.FindByEmailAsync(request.Email);
 
-        // Don't reveal whether the email exists - just return as if it succeeded.
         if (user is not null)
         {
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);

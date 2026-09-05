@@ -6,7 +6,6 @@ using RealEstateMarketplace.Application.Interfaces.Services;
 
 namespace RealEstateMarketplace.Infrastructure.Services;
 
-// Uses the built-in System.Net.Mail SMTP client - no extra NuGet package required.
 public class SmtpEmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
@@ -35,9 +34,7 @@ public class SmtpEmailService : IEmailService
 
         if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(username))
         {
-            // Email isn't configured yet (e.g. local dev without SMTP credentials).
-            // Log the link instead of throwing, so the forgot-password flow still
-            // works end-to-end for testing.
+
             _logger.LogWarning(
                 "Email is not configured. Password reset link for {Email}: {ResetLink}",
                 toEmail,
@@ -64,9 +61,7 @@ public class SmtpEmailService : IEmailService
         {
             Credentials = new NetworkCredential(username, password),
             EnableSsl = true,
-            // Without an explicit timeout, a slow/unresponsive SMTP server can
-            // block the whole HTTP request indefinitely - fail fast instead so
-            // the caller gets a clear error rather than a request that never resolves.
+
             Timeout = 15000
         };
 

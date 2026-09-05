@@ -38,7 +38,7 @@ public class PropertyService : IPropertyService
     public async Task<PagedResponse<PropertyDto>> GetPropertiesAsync(PagedRequest request, CancellationToken cancellationToken = default)
     {
         var (items, totalCount) = await _propertyRepository.GetPagedAsync(request, cancellationToken);
-        
+
         return new PagedResponse<PropertyDto>
         {
             Items = items.Select(property => property.ToDto()).ToList(),
@@ -68,8 +68,7 @@ public class PropertyService : IPropertyService
             Bathrooms = request.Bathrooms,
             Rooms = request.Rooms,
             Area = request.Area,
-            // New listings always start out Available. The owner changes this
-            // later (e.g. to Sold/Rented) from their My Properties page.
+
             Status = RealEstateMarketplace.Domain.Enums.PropertyStatus.Available,
             PropertyType = request.PropertyType,
             ListingType = request.ListingType,

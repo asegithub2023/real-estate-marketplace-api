@@ -10,6 +10,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext, Exception exception, CancellationToken ct)
     {
+        // Map known failures and hide unexpected exception details.
         var (status, title, detail, errors) = exception switch
         {
             ValidationException ve => (

@@ -31,11 +31,6 @@ public class ConversationsController : ControllerBase
         _mapper = mapper;
     }
 
-    // =========================================================
-    // Resolve the current user strictly from the JWT (same pattern as
-    // FavoritesController). Angular never supplies this value - it is
-    // never read from the route, query string, or request body.
-    // =========================================================
     private bool TryGetCurrentUserId(out int userId)
     {
         var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -114,9 +109,6 @@ public class ConversationsController : ControllerBase
                 : NotFound(result.Error.Message);
         }
 
-        // Re-fetch through the enriched query so the response includes property/owner
-        // details even when an existing conversation was returned (which won't have
-        // the navs loaded straight out of the handler).
         var conversation = await _sender.Send(new GetConversationByIdQuery { Id = result.Value!.Id }, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = conversation!.Id }, conversation.ToDto(userId));

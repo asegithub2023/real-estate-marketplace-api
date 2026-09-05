@@ -29,6 +29,7 @@ public class ApplicationDbContext(
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(ApplicationDbContext).Assembly);
 
+        // Seed required reference and demonstration data during model setup.
         SeedData.Seed(modelBuilder);
     }
 }

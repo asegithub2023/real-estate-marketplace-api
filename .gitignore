@@ -16,6 +16,9 @@ obj/
 # Logs
 *.log
 
+# ASP.NET Core data protection keys
+/RealEstateMarketplace.Api/DataProtection-Keys/
+
 # OS files
 .DS_Store
 Thumbs.db

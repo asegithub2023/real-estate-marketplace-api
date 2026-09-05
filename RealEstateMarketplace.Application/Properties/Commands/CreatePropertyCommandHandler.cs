@@ -10,7 +10,7 @@ public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropert
     private readonly IPropertyRepository _propertyRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPropertyImageRepository _propertyImageRepository;
-    
+
     public CreatePropertyCommandHandler(
         IPropertyRepository propertyRepository,
         IUserRepository userRepository,
@@ -41,8 +41,7 @@ public sealed class CreatePropertyCommandHandler : IRequestHandler<CreatePropert
             Bathrooms = request.Bathrooms,
             Rooms = request.Rooms,
             Area = request.Area,
-            // New listings always start out Available. The owner changes this
-            // later (e.g. to Sold/Rented) from their My Properties page.
+
             Status = RealEstateMarketplace.Domain.Enums.PropertyStatus.Available,
             PropertyType = request.PropertyType,
             ListingType = request.ListingType,

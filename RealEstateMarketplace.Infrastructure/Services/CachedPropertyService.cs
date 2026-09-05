@@ -68,6 +68,7 @@ public class CachedPropertyService : ICachedPropertyService
 
     public async Task InvalidatePropertyCacheAsync(int? id, CancellationToken cancellationToken = default)
     {
+        // Invalidate both the item and collection views after a property change.
         if (id.HasValue)
         {
             await _cache.RemoveAsync(CacheKeys.Property(id.Value), cancellationToken);

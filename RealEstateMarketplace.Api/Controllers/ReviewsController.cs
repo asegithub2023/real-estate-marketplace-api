@@ -40,7 +40,7 @@ public class ReviewsController : ControllerBase
     {
         var reviews = await _sender.Send(new GetReviewsByPropertyQuery { PropertyId = propertyId }, cancellationToken);
         var reviewDtos = _mapper.Map<IReadOnlyList<ReviewDto>>(reviews);
-        
+
         var response = reviewDtos.Select(r => new HateoasResponse<ReviewDto>
         {
             Data = r,
@@ -142,4 +142,3 @@ public class ReviewsController : ControllerBase
         return result.IsSuccess ? NoContent() : NotFound();
     }
 }
-

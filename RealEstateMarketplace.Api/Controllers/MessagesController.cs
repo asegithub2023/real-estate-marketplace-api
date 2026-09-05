@@ -16,10 +16,6 @@ using Scalar.AspNetCore;
 
 namespace RealEstateMarketplace.Api.Controllers;
 
-// NOTE: this controller's class name is singular ("MessageController"), which the
-// [controller] route token turns into "/api/v1/Message" (not "/api/v1/Messages").
-// That matches the project's existing route - the Angular MessageService is written
-// to call that exact path. Left as-is to avoid moving an already-shipped endpoint.
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Tags("Messages")]
@@ -74,8 +70,6 @@ public class MessageController : ControllerBase
             return Forbid();
         }
 
-        // Opening the conversation counts as reading it - mark the other participant's
-        // messages as read before returning the list.
         await _sender.Send(new MarkConversationMessagesAsReadCommand { ConversationId = conversationId, ReaderUserId = userId }, cancellationToken);
 
         var messages = await _sender.Send(new GetConversationMessagesQuery { ConversationId = conversationId }, cancellationToken);
@@ -118,9 +112,6 @@ public class MessageController : ControllerBase
             return BadRequest(result.Error!.Message);
         }
 
-        // Build the response directly - the sender's display name is already on the
-        // JWT (TokenService issues it as ClaimTypes.Name), so there's no need for an
-        // extra DB round trip just to populate SenderName.
         var dto = new MessageDto
         {
             Id = result.Value!.Id,
@@ -131,22 +122,10 @@ public class MessageController : ControllerBase
             SentAt = result.Value.SentAt
         };
 
-        // Realtime fan-out. Persistence already happened above via MediatR - this is
-        // purely a notification, so it never risks creating a duplicate message. The
-        // group only contains connections that passed the participant check in
-        // ChatHub.JoinConversation, and the broadcast goes to everyone in it
-        // (including the sender's own connections/tabs) - the Angular client dedupes
-        // by message id, which also covers a user with the same conversation open in
-        // more than one tab.
         await _hubContext.Clients
             .Group(ChatHub.ConversationGroup(dto.ConversationId))
             .SendAsync("ReceiveMessage", dto, cancellationToken);
 
-        // Also push an updated conversation summary (new last message + recomputed
-        // unread count) to both participants' user groups, so conversation lists
-        // refresh even for someone who doesn't have this specific thread open.
-        // Re-fetched (rather than reusing the `conversation` loaded above) so the
-        // summary reflects the message that was just sent.
         var updatedConversation = await _sender.Send(new GetConversationByIdQuery { Id = dto.ConversationId }, cancellationToken);
         if (updatedConversation is not null)
         {

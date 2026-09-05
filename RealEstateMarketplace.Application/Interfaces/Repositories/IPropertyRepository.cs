@@ -5,12 +5,10 @@ namespace RealEstateMarketplace.Application.Interfaces.Repositories;
 
 public interface IPropertyRepository
 {
+    // Read queries return detached graphs for safe projection and caching.
     Task<Property?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
-    // Tracked, no navigation includes - used only by the update path. Fetching
-    // via GetByIdAsync (AsNoTracking + Include(Owner/Images/Features)) and then
-    // calling Update() marks the whole loaded graph as Modified, not just the
-    // scalar fields being changed - this is what caused status updates to
-    // appear to succeed but not actually persist correctly.
+
+    // Update commands require a tracked entity.
     Task<Property?> GetTrackedByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Property>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Property>> GetByOwnerIdAsync(int ownerId, CancellationToken cancellationToken = default);

@@ -28,6 +28,7 @@ public class CloudinaryService : ICloudinaryService
         var uploadParams = new ImageUploadParams
         {
             File = new FileDescription(file.FileName, stream),
+            // Keep property media in a dedicated folder.
             Folder = "real-estate/properties"
         };
 

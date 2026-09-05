@@ -15,5 +15,5 @@ public class Conversation
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Message> Messages { get; set; } = [];
-    //public ICollection<Message> Messages { get; set; } = new List<Message>()
+
 }

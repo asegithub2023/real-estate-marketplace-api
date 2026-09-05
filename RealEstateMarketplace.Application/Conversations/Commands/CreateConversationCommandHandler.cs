@@ -31,7 +31,6 @@ public sealed class CreateConversationCommandHandler : IRequestHandler<CreateCon
             return Result.Failure<Conversation, ConversationError>(ConversationError.UserOrPropertyNotFound());
         }
 
-        // The owner is never taken from the request - it always comes from the property record.
         var ownerId = property.OwnerId;
 
         if (ownerId == request.BuyerId)
@@ -39,9 +38,6 @@ public sealed class CreateConversationCommandHandler : IRequestHandler<CreateCon
             return Result.Failure<Conversation, ConversationError>(ConversationError.CannotContactOwnProperty());
         }
 
-        // Prevent duplicate conversations: if one already exists for this property/buyer/owner
-        // triple, hand it back instead of creating a new one (the DB also enforces this with a
-        // unique index as a last line of defense).
         var existing = await _conversationRepository.GetByPropertyAndUsersAsync(
             request.PropertyId, request.BuyerId, ownerId, cancellationToken);
 

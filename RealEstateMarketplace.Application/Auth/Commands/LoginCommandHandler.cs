@@ -60,11 +60,6 @@ public sealed class LoginCommandHandler
 
         await _userManager.ResetAccessFailedCountAsync(user);
 
-        // The app's role model is User.Role (the enum), not Identity's own
-        // role tables - RegisterCommandHandler's token also uses this. Reading
-        // from _userManager.GetRolesAsync(user) here caused a mismatch: a user
-        // promoted to Admin by updating User.Role would still get a "Seeker"
-        // JWT, since Identity's role tables were never updated to match.
         var roles = new List<string> { user.Role.ToString() };
 
         var accessToken =

@@ -20,7 +20,7 @@ public sealed class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordC
 
         if (user is null)
         {
-            // Same generic message as an invalid/expired token - don't reveal whether the email exists.
+
             return Result.Failure<Unit, AuthError>(AuthError.InvalidResetToken());
         }
 

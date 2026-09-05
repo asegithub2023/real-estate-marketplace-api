@@ -15,9 +15,7 @@ public class ChatHub : Hub
         _conversationRepository = conversationRepository;
     }
 
-   
     public static string UserGroup(int userId) => $"user-{userId}";
-
 
     public static string ConversationGroup(int conversationId) => $"conversation-{conversationId}";
 
@@ -29,6 +27,7 @@ public class ChatHub : Hub
 
     public override async Task OnConnectedAsync()
     {
+        // Add the connection to its private user group.
         if (TryGetCurrentUserId(out var userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, UserGroup(userId));
@@ -37,7 +36,6 @@ public class ChatHub : Hub
         await base.OnConnectedAsync();
     }
 
- 
     public async Task JoinConversation(int conversationId)
     {
         if (!TryGetCurrentUserId(out var userId))
@@ -47,6 +45,7 @@ public class ChatHub : Hub
 
         var conversation = await _conversationRepository.GetByIdAsync(conversationId);
 
+        // Verify membership before joining a conversation group.
         if (conversation is null || (conversation.BuyerId != userId && conversation.OwnerId != userId))
         {
             return;
@@ -55,7 +54,6 @@ public class ChatHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, ConversationGroup(conversationId));
     }
 
-   
     public Task LeaveConversation(int conversationId)
     {
         return Groups.RemoveFromGroupAsync(Context.ConnectionId, ConversationGroup(conversationId));

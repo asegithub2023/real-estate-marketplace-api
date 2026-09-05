@@ -13,8 +13,5 @@ public class Message
 
     public DateTime SentAt { get; set; } = DateTime.UtcNow;
 
-    // True once the recipient (the participant who is NOT the sender) has opened
-    // the conversation. Used only to compute ConversationDto.UnreadCount - there's
-    // no per-message "seen" UI.
     public bool IsRead { get; set; }
 }

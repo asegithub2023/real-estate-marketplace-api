@@ -19,5 +19,3 @@ public class User : IdentityUser<int>
     public ICollection<Message> SentMessages { get; set; } = [];
     public ICollection<Conversation> Conversations { get; set; } = [];
 }
-
-

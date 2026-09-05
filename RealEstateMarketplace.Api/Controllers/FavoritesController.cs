@@ -31,20 +31,12 @@ public class FavoritesController : ControllerBase
         _hateoasHelper = hateoasHelper;
     }
 
-    // =========================================================
-    // Resolve the current user strictly from the JWT.
-    // The API's JwtBearer handler uses the default inbound claim
-    // mapping (Program.cs does not set MapInboundClaims = false),
-    // so the "sub" claim TokenService issues arrives here already
-    // remapped to ClaimTypes.NameIdentifier. Angular never supplies
-    // this value - it is never read from the route, query, or body.
-    // =========================================================
    private bool TryGetCurrentUserId(out int userId)
 {
     var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
     return int.TryParse(value, out userId);
 }
-    
+
     [HttpGet("me")]
     [ProducesResponseType(typeof(List<HateoasResponse<FavoriteDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

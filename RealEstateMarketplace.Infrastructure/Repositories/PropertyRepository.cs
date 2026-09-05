@@ -18,6 +18,7 @@ public class PropertyRepository : IPropertyRepository
 
     public async Task<Property?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
+        // Include the graph required by property responses in one query.
         return await _context.Properties
             .AsNoTracking()
             .Include(x => x.Owner)
@@ -28,6 +29,7 @@ public class PropertyRepository : IPropertyRepository
 
     public async Task<Property?> GetTrackedByIdAsync(int id, CancellationToken cancellationToken = default)
     {
+        // Keep mutation queries tracked for EF change detection.
         return await _context.Properties
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
@@ -57,10 +59,9 @@ public class PropertyRepository : IPropertyRepository
 
    public async Task<(IReadOnlyList<Property> Items, int TotalCount)> GetPagedAsync(PagedRequest request, CancellationToken cancellationToken = default)
 {
+    // Build filters before counting and applying pagination.
     var query = _context.Properties.AsNoTracking();
 
-    // Search: title, description, address, city, or a matching Property Type name
-    // (e.g. searching "Villa" or "Apartment" returns properties of that type).
     if (!string.IsNullOrWhiteSpace(request.Search))
     {
         var searchTerm = request.Search.Trim();
@@ -76,7 +77,6 @@ public class PropertyRepository : IPropertyRepository
             (matchedPropertyType != null && x.PropertyType == matchedPropertyType));
     }
 
-    // Filters
     if (request.MinPrice.HasValue)
         query = query.Where(x => x.Price >= request.MinPrice.Value);
 
@@ -98,13 +98,10 @@ public class PropertyRepository : IPropertyRepository
     if (request.ListingType.HasValue)
         query = query.Where(x => x.ListingType == request.ListingType.Value);
 
-    // Get total count before pagination
     var totalCount = await query.CountAsync(cancellationToken);
 
-    // Apply sorting
     query = ApplySorting(query, request);
 
-    // Apply pagination
     var items = await query
         .Include(x => x.Owner)
         .Include(x => x.Images)
